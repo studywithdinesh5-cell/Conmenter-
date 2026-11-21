@@ -1,1315 +1,774 @@
 <!DOCTYPE html>
 <html lang="ta">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Live Handwriting Notebook - Auto-Connect Stream Overlay</title>
-    <!-- Tailwind CSS for responsive layout & controls -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for Realistic Handwriting & Clean UI -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Dancing+Script:wght@700&family=Indie+Flower&family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Live Handwriting Notebook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Indie+Flower&family=Kalam:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    <style>
-        /* Custom Realistic Notebook & Pen Styles */
-        :root {
-            --paper-bg: #fdfbf7;
-            --line-color: #a3c6e8;
-            --margin-color: #e57373;
-            --ink-color: #1a365d; /* Royal Blue Ballpoint */
-            --line-height: 46px;
-        }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #f4efe6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+    /* Realistic Notebook Paper Background */
+    #notebook-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-color: #fcfaf2;
+      background-image: 
+        linear-gradient(90deg, transparent 54px, #f28b82 54px, #f28b82 56px, transparent 56px),
+        linear-gradient(#d2e3fc 1px, transparent 1px);
+      background-size: 100% 100%, 100% 48px;
+      background-position: 0 0, 0 88px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+    }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100dvh;
-            width: 100vw;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    /* Top Header on Notebook */
+    #notebook-header {
+      height: 88px;
+      padding: 18px 20px 10px 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #f28b82;
+    }
 
-        /* 9:16 Vertical Stream Container (Full-screen on mobile, centered portrait frame on desktop) */
-        .stream-stage {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            max-width: 540px;
-            max-height: 960px;
-            background: var(--paper-bg);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+    #notebook-title {
+      font-family: 'Kalam', cursive;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a237e;
+      letter-spacing: 0.5px;
+    }
 
-        @media (max-width: 540px) {
-            .stream-stage {
-                max-width: 100vw;
-                max-height: 100dvh;
-                border-radius: 0;
-            }
-        }
+    #live-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(22, 163, 74, 0.12);
+      border: 1.5px solid #16a34a;
+      color: #15803d;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
 
-        @media (min-width: 541px) {
-            .stream-stage {
-                height: 95dvh;
-                aspect-ratio: 9 / 16;
-                border-radius: 18px;
-            }
-        }
+    #live-dot {
+      width: 8px;
+      height: 8px;
+      background: #16a34a;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
 
-        /* Realistic Ruled Paper Texture & Horizontal Lines */
-        .notebook-paper {
-            position: relative;
-            flex: 1;
-            width: 100%;
-            height: 100%;
-            background-color: var(--paper-bg);
-            background-image: 
-                radial-gradient(rgba(0,0,0,0.03) 1px, transparent 0),
-                linear-gradient(to bottom, transparent calc(var(--line-height) - 1.5px), var(--line-color) calc(var(--line-height) - 1.5px), var(--line-color) var(--line-height));
-            background-size: 16px 16px, 100% var(--line-height);
-            background-position: 0 0, 0 112px; /* Align lines below header */
-            padding-left: 66px;
-            padding-right: 16px;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
-        }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
 
-        /* Page Flip / Turn Transition */
-        .notebook-paper.page-turning {
-            transform: translateX(-105%) rotate(-3deg);
-            opacity: 0;
-        }
+    /* Canvas Layer for Handwriting & Pen */
+    #canvas-wrapper {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      overflow: hidden;
+    }
 
-        /* Double Red Vertical Margin Line */
-        .margin-line {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 52px;
-            width: 4px;
-            border-left: 1.5px solid var(--margin-color);
-            border-right: 1px solid rgba(229, 115, 115, 0.65);
-            pointer-events: none;
-            z-index: 2;
-        }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
 
-        /* Left Spiral Binding Holes & Metallic Rings */
-        .spiral-binding {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: 40px;
-            background: linear-gradient(90deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.02) 70%, transparent 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            padding: 18px 0;
-            z-index: 5;
-            pointer-events: none;
-        }
+    /* Animated Fountain/Ballpoint Pen */
+    #pen {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      pointer-events: none;
+      transform-origin: 6px 104px;
+      transform: translate(-200px, -200px) rotate(-12deg);
+      transition: opacity 0.25s ease;
+      z-index: 20;
+      filter: drop-shadow(4px 8px 6px rgba(0,0,0,0.28));
+    }
 
-        .spiral-unit {
-            position: relative;
-            height: 24px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-        }
+    /* Subtle Counter Footer */
+    #footer-bar {
+      position: absolute;
+      bottom: 10px;
+      right: 16px;
+      font-family: 'Kalam', cursive;
+      font-size: 15px;
+      color: rgba(26, 35, 126, 0.55);
+      pointer-events: none;
+      z-index: 10;
+    }
 
-        .binder-hole {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #1e293b;
-            margin-left: 18px;
-            box-shadow: inset 1px 2px 3px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.85);
-        }
+    /* Subtle Toggle Button for Settings */
+    #open-settings-btn {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.08);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+      z-index: 30;
+    }
 
-        .metal-ring {
-            position: absolute;
-            left: -4px;
-            width: 30px;
-            height: 7px;
-            border-radius: 4px;
-            background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 45%, #475569 85%, #cbd5e1 100%);
-            box-shadow: 0 2px 3px rgba(0,0,0,0.35);
-            transform: rotate(-8deg);
-        }
+    /* Control Panel Overlay */
+    #settings-panel {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      z-index: 100;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
 
-        /* Notebook Top Header Area */
-        .notebook-header {
-            height: 112px;
-            padding-top: 14px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--margin-color);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            z-index: 3;
-        }
+    #settings-panel.hidden {
+      display: none;
+    }
 
-        .header-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.76rem;
-            color: #64748b;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            padding-right: 36px; /* Space for corner toggle icon */
-        }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+    }
 
-        .date-box {
-            border: 1.5px solid #94a3b8;
-            border-radius: 6px;
-            padding: 2px 8px;
-            background: rgba(255,255,255,0.7);
-            font-family: 'Kalam', cursive;
-            color: #334155;
-        }
+    .panel-header h2 {
+      font-size: 18px;
+      color: #38bdf8;
+    }
 
-        .notebook-title {
-            font-family: 'Kalam', cursive;
-            font-size: clamp(1.28rem, 4.6vw, 1.7rem);
-            font-weight: 700;
-            color: #b91c1c;
-            line-height: 1.15;
-            text-align: center;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.85);
-            margin-top: 2px;
-        }
+    .btn-go-live {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
 
-        /* Written Names Area */
-        .lines-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding-top: 0;
-            position: relative;
-            z-index: 3;
-        }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-        .name-row {
-            height: var(--line-height);
-            display: flex;
-            align-items: flex-end;
-            padding-bottom: 5px;
-            position: relative;
-            white-space: nowrap;
-        }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .row-number {
-            position: absolute;
-            left: -42px;
-            bottom: 7px;
-            width: 24px;
-            text-align: right;
-            font-family: 'Caveat', cursive;
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #64748b;
-            user-select: none;
-        }
+    label {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+      display: block;
+    }
 
-        .handwritten-text {
-            font-family: 'Caveat', cursive;
-            font-size: clamp(1.7rem, 6vw, 2.2rem);
-            font-weight: 700;
-            color: var(--ink-color);
-            line-height: 1;
-            letter-spacing: 0.02em;
-            transform: rotate(-0.5deg);
-            display: inline-flex;
-            align-items: baseline;
-        }
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 14px;
+      outline: none;
+    }
 
-        .char-span {
-            display: inline-block;
-            opacity: 0;
-            transform: scale(0.84) translateY(2px);
-            transition: opacity 0.06s ease-out, transform 0.08s ease-out;
-        }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
 
-        .char-span.visible {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
+    .row > * {
+      flex: 1;
+    }
 
-        .heart-badge {
-            margin-left: 8px;
-            font-size: 1.2rem;
-            opacity: 0;
-            transform: scale(0);
-            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+    .btn-primary {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      width: 100%;
+    }
 
-        .heart-badge.visible {
-            opacity: 1;
-            transform: scale(1);
-        }
+    .btn-secondary {
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
 
-        /* Realistic Animated Fountain / Ballpoint Pen */
-        #writing-pen {
-            position: absolute;
-            width: 145px;
-            height: 145px;
-            pointer-events: none;
-            z-index: 25;
-            /* Exact nib tip is at bottom-left (0, 145) */
-            transform-origin: 0% 100%;
-            transition: left 0.065s linear, top 0.065s linear, opacity 0.25s ease, transform 0.1s ease;
-            opacity: 0;
-            filter: drop-shadow(6px 10px 8px rgba(0, 0, 0, 0.28));
-        }
+    .status-box {
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+    }
 
-        #writing-pen.active {
-            opacity: 1;
-            animation: penScribble 0.14s infinite alternate ease-in-out;
-        }
+    .status-ok { border-color: #16a34a; color: #4ade80; }
+    .status-err { border-color: #dc2626; color: #f87171; }
 
-        @keyframes penScribble {
-            0% { transform: rotate(0deg) translateY(0px); }
-            100% { transform: rotate(-2.5deg) translateY(-2px); }
-        }
+    .color-dots {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
 
-        /* Stream Status Footer */
-        .stream-footer {
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px dashed rgba(148, 163, 184, 0.55);
-            font-size: 0.75rem;
-            color: #475569;
-            padding-bottom: 6px;
-            gap: 8px;
-        }
+    .color-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
 
-        .live-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(239, 68, 68, 0.1);
-            color: #dc2626;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            padding: 2px 10px;
-            border-radius: 999px;
-            font-weight: 700;
-            font-size: 0.7rem;
-            max-width: 72%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .live-pill.connected {
-            background: rgba(16, 185, 129, 0.12);
-            color: #047857;
-            border-color: rgba(16, 185, 129, 0.35);
-        }
-
-        .live-pill.error {
-            background: rgba(225, 29, 72, 0.12);
-            color: #be123c;
-            border-color: rgba(225, 29, 72, 0.35);
-        }
-
-        .live-dot {
-            width: 7px;
-            height: 7px;
-            min-width: 7px;
-            background: currentColor;
-            border-radius: 50%;
-            animation: pulseDot 1.2s infinite;
-        }
-
-        @keyframes pulseDot {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.45); opacity: 0.5; }
-        }
-
-        /* Floating Controls Toggle Button */
-        #toggle-controls-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            z-index: 40;
-            background: rgba(15, 23, 42, 0.88);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(6px);
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-size: 0.76rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            transition: all 0.25s ease;
-        }
-
-        #toggle-controls-btn:hover {
-            background: #0f172a;
-            transform: scale(1.04);
-        }
-
-        /* Subtle Semi-Transparent Gear Icon in Clean Stream Mode */
-        #toggle-controls-btn.clean-live-mode {
-            opacity: 0.22;
-            padding: 6px 8px;
-            background: rgba(15, 23, 42, 0.55);
-        }
-        #toggle-controls-btn.clean-live-mode #toggle-btn-label {
-            display: none;
-        }
-        #toggle-controls-btn.clean-live-mode:hover,
-        #toggle-controls-btn.clean-live-mode:active {
-            opacity: 1;
-        }
-
-        /* Collapsible Settings Drawer */
-        .controls-drawer {
-            position: absolute;
-            inset: 0;
-            z-index: 50;
-            background: rgba(15, 23, 42, 0.96);
-            backdrop-filter: blur(12px);
-            color: #f8fafc;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            transition: opacity 0.25s ease, transform 0.25s ease;
-        }
-
-        .controls-drawer.hidden-drawer {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(15px);
-        }
-
-        .controls-drawer::-webkit-scrollbar {
-            width: 5px;
-        }
-        .controls-drawer::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 10px;
-        }
-    </style>
+    .color-dot.active {
+      border-color: #fff;
+      transform: scale(1.12);
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Main 9:16 Vertical Stream Stage -->
-    <div class="stream-stage" id="streamStage">
-
-        <!-- Top-Right Gear Button / Subtle Corner Icon -->
-        <button id="toggle-controls-btn" title="Open Live Stream Settings">
-            <span>⚙️</span>
-            <span id="toggle-btn-label">Controls</span>
-        </button>
-
-        <!-- Realistic Spiral Notebook Paper -->
-        <div class="notebook-paper" id="notebookPaper">
-            <!-- Left Spiral Rings -->
-            <div class="spiral-binding" id="spiralBinding"></div>
-
-            <!-- Red Margin Line -->
-            <div class="margin-line"></div>
-
-            <!-- Top Header Section -->
-            <div class="notebook-header">
-                <div class="header-meta">
-                    <span class="date-box" id="notebookDate">Date: 21/11/2026</span>
-                    <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold text-xs shadow-sm">
-                        ✍️ Written: <span id="totalCountDisplay">0</span>
-                    </span>
-                </div>
-                <div class="notebook-title" id="notebookTitleDisplay">
-                    SUBSCRIBERS NOTEBOOK ❤️
-                </div>
-            </div>
-
-            <!-- Ruled Lines Container -->
-            <div class="lines-container" id="linesContainer"></div>
-
-            <!-- Bottom Status Footer -->
-            <div class="stream-footer">
-                <div class="live-pill" id="liveStatusPill">
-                    <span class="live-dot"></span>
-                    <span id="streamStatusText">LIVE CHAT READY</span>
-                </div>
-                <div class="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                    Queue: <span id="queueCountDisplay" class="text-slate-800 font-bold">0</span>
-                </div>
-            </div>
-
-            <!-- Animated Realistic Fountain / Ballpoint Pen -->
-            <div id="writing-pen">
-                <svg viewBox="0 0 150 150" width="145" height="145" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Pen Shadow on Paper -->
-                    <path d="M2 148 L120 45 L128 53 L6 149 Z" fill="rgba(0,0,0,0.16)"/>
-                    <!-- Metallic Nib Tip (Exact tip at x=0, y=150) -->
-                    <polygon points="0,150 14,128 22,136" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>
-                    <line x1="0" y1="150" x2="18" y2="132" stroke="#1e293b" stroke-width="1.2"/>
-                    <!-- Gold Grip Collar -->
-                    <polygon points="14,128 22,136 28,130 20,122" fill="#f59e0b"/>
-                    <!-- Royal Blue & Gold Pen Barrel -->
-                    <path d="M20,122 L118,24 C124,18 132,26 126,32 L28,130 Z" fill="url(#penBodyGrad)"/>
-                    <!-- Gold Pocket Clip -->
-                    <path d="M85,57 L122,20 C125,17 129,21 126,24 L92,58" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
-                    <!-- Gold Center Ring -->
-                    <line x1="68" y1="74" x2="76" y2="82" stroke="#fbbf24" stroke-width="3.5"/>
-                    <defs>
-                        <linearGradient id="penBodyGrad" x1="20" y1="122" x2="126" y2="32" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#1e3a8a"/>
-                            <stop offset="50%" stop-color="#2563eb"/>
-                            <stop offset="100%" stop-color="#0f172a"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-            </div>
-        </div>
-
-        <!-- Collapsible Live Control Panel Drawer -->
-        <div class="controls-drawer" id="controlsDrawer">
-            <div class="flex items-center justify-between border-b border-slate-700 pb-2.5">
-                <div>
-                    <h2 class="text-base font-bold text-white flex items-center gap-1.5">
-                        <span>✍️ Live Stream Settings</span>
-                    </h2>
-                    <p class="text-[11px] text-slate-400">Supports ?v=VIDEO_ID Auto-Connect URL</p>
-                </div>
-                <button id="closeDrawerBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition">
-                    ✓ Go Live (Hide Panel)
-                </button>
-            </div>
-
-            <!-- Feedback / Error Message Box -->
-            <div id="statusToast" class="hidden text-xs font-medium px-3 py-2 rounded-xl bg-blue-900/70 border border-blue-500/40 text-blue-200 leading-snug"></div>
-
-            <!-- 1. YouTube Live Chat Auto-Connect (Primary Section) -->
-            <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-red-400">1. YouTube Live Chat Connect</span>
-                    <span id="ytConnectionBadge" class="text-[11px] bg-slate-700 text-slate-300 px-2.5 py-0.5 rounded-full font-semibold">Disconnected</span>
-                </div>
-
-                <!-- Pre-filled API Key Field -->
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-[11px] text-slate-300 font-medium">YouTube Data API v3 Key</label>
-                        <button type="button" id="toggleKeyVisibilityBtn" class="text-[10px] text-blue-400 hover:underline">Hide Key</button>
-                    </div>
-                    <input type="text" id="ytApiKeyInput" value="AIzaSyB9c-xdK0ur_0TmCuvN_-xul" placeholder="AIzaSy..." 
-                        class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs font-mono text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-red-400">
-                </div>
-
-                <!-- YouTube Live Video URL / ID -->
-                <div>
-                    <label class="block text-[11px] text-slate-300 font-medium mb-1">YouTube Live Video URL or Video ID</label>
-                    <input type="text" id="ytVideoIdInput" placeholder="https://youtube.com/live/xxxxx or Video ID" 
-                        class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-400">
-                    <p class="text-[10px] text-slate-400 mt-1">
-                        💡 Prism Live டிப்ஸ்: உங்கள் GitHub லிங்க் முடிவில் <code class="text-amber-300">?v=VIDEO_ID</code> சேர்த்து Web Widget-ல் கொடுத்தால் தானாகவே கனெக்ட் ஆகும்!
-                    </p>
-                </div>
-
-                <!-- Mode Toggle & Polling Interval -->
-                <div class="grid grid-cols-2 gap-2 pt-0.5">
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-1">What to Write?</label>
-                        <select id="writeModeSelect" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs text-white">
-                            <option value="text">Write Comment Text</option>
-                            <option value="author">Write Commenter Name</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-1">Check Speed (Quota Saver)</label>
-                        <select id="pollingIntervalSelect" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs text-white">
-                            <option value="5000">Every 5s (~2.7 hrs free)</option>
-                            <option value="8000" selected>Every 8s (~4.5 hrs free)</option>
-                            <option value="10000">Every 10s (~5.5 hrs free)</option>
-                            <option value="15000">Every 15s (~8.3 hrs free)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Connect / Disconnect Buttons -->
-                <div class="flex gap-2 pt-1">
-                    <button id="connectYtBtn" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2.5 rounded-xl transition shadow">
-                        🔴 Connect YouTube Live
-                    </button>
-                    <button id="disconnectYtBtn" class="hidden bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition">
-                        Stop
-                    </button>
-                </div>
-            </div>
-
-            <!-- 2. Instant Test & Auto Demo Mode -->
-            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-400">2. Test / Demo Mode</span>
-                    <button id="autoDemoBtn" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg font-semibold transition">
-                        ▶ Start Auto Demo
-                    </button>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="manualNameInput" placeholder="Type name (e.g. Sriram)" 
-                        class="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-400">
-                    <button id="addManualNameBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition">
-                        Write Name
-                    </button>
-                </div>
-            </div>
-
-            <!-- 3. Notebook & Pen Customization -->
-            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 block">3. Notebook & Pen Style</span>
-                
-                <!-- Header Text -->
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-1">Notebook Top Title</label>
-                    <input type="text" id="headerTitleInput" value="SUBSCRIBERS NOTEBOOK ❤️" 
-                        class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400">
-                </div>
-
-                <!-- Ink Color & Font -->
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-1">Pen Ink Color</label>
-                        <div class="flex items-center gap-2 pt-1">
-                            <button type="button" class="ink-swatch w-6 h-6 rounded-full border-2 border-white shadow" style="background:#1a365d" data-color="#1a365d" title="Royal Blue"></button>
-                            <button type="button" class="ink-swatch w-6 h-6 rounded-full border border-slate-500 shadow" style="background:#111827" data-color="#111827" title="Black Gel"></button>
-                            <button type="button" class="ink-swatch w-6 h-6 rounded-full border border-slate-500 shadow" style="background:#b91c1c" data-color="#b91c1c" title="Red Pen"></button>
-                            <button type="button" class="ink-swatch w-6 h-6 rounded-full border border-slate-500 shadow" style="background:#047857" data-color="#047857" title="Emerald Green"></button>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-1">Handwriting Font</label>
-                        <select id="fontSelect" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-2 py-1.5 text-xs text-white">
-                            <option value="'Caveat', cursive">Caveat (Natural Cursive)</option>
-                            <option value="'Kalam', cursive">Kalam (Bold Marker)</option>
-                            <option value="'Indie Flower', cursive">Indie Flower (Neat Script)</option>
-                            <option value="'Dancing Script', cursive">Dancing Script (Calligraphy)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Writing Speed & ASMR Sound -->
-                <div class="grid grid-cols-2 gap-2.5 items-center pt-1">
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-1">Speed: <span id="speedLabel">Normal</span></label>
-                        <input type="range" id="speedRange" min="45" max="160" value="90" class="w-full accent-emerald-500">
-                    </div>
-                    <div class="pt-2">
-                        <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
-                            <input type="checkbox" id="soundToggle" class="rounded accent-emerald-500 w-4 h-4">
-                            <span>🔊 Pen Scratch Sound</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Page Actions -->
-            <div class="flex gap-2 pb-2">
-                <button id="clearPageBtn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold py-2.5 rounded-xl transition">
-                    📄 Clear Page
-                </button>
-                <button id="resetAllBtn" class="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/50 text-xs font-semibold px-4 py-2.5 rounded-xl transition">
-                    Reset Count
-                </button>
-            </div>
-        </div>
-
+  <!-- Main Notebook View -->
+  <div id="notebook-container">
+    <div id="notebook-header">
+      <div id="notebook-title">SUBSCRIBERS NOTEBOOK ❤️</div>
+      <div id="live-badge">
+        <span id="live-dot"></span>
+        <span>YT LIVE CONNECTED</span>
+      </div>
     </div>
 
-    <script>
-        /**
-         * Live Handwriting Notebook Web Application
-         * Supports URL parameter auto-connect (?v=VIDEO_ID, &key=, &mode=, &interval=),
-         * automatic clean-mode panel hiding for Prism Live / OBS Web Widgets,
-         * FIFO comment queue, and smooth character-by-character pen tracking.
-         */
-        document.addEventListener('DOMContentLoaded', () => {
-            const DEFAULT_API_KEY = "AIzaSyB9c-xdK0ur_0TmCuvN_-xul";
-
-            // --- DOM Elements ---
-            const notebookPaper = document.getElementById('notebookPaper');
-            const spiralBinding = document.getElementById('spiralBinding');
-            const linesContainer = document.getElementById('linesContainer');
-            const writingPen = document.getElementById('writing-pen');
-            const totalCountDisplay = document.getElementById('totalCountDisplay');
-            const queueCountDisplay = document.getElementById('queueCountDisplay');
-            const notebookTitleDisplay = document.getElementById('notebookTitleDisplay');
-            const notebookDate = document.getElementById('notebookDate');
-            const liveStatusPill = document.getElementById('liveStatusPill');
-            const streamStatusText = document.getElementById('streamStatusText');
-
-            // Controls Drawer Elements
-            const toggleControlsBtn = document.getElementById('toggle-controls-btn');
-            const controlsDrawer = document.getElementById('controlsDrawer');
-            const closeDrawerBtn = document.getElementById('closeDrawerBtn');
-            const manualNameInput = document.getElementById('manualNameInput');
-            const addManualNameBtn = document.getElementById('addManualNameBtn');
-            const autoDemoBtn = document.getElementById('autoDemoBtn');
-            const headerTitleInput = document.getElementById('headerTitleInput');
-            const fontSelect = document.getElementById('fontSelect');
-            const speedRange = document.getElementById('speedRange');
-            const speedLabel = document.getElementById('speedLabel');
-            const soundToggle = document.getElementById('soundToggle');
-            const clearPageBtn = document.getElementById('clearPageBtn');
-            const resetAllBtn = document.getElementById('resetAllBtn');
-            const statusToast = document.getElementById('statusToast');
-
-            // YouTube Live API Elements
-            const ytApiKeyInput = document.getElementById('ytApiKeyInput');
-            const toggleKeyVisibilityBtn = document.getElementById('toggleKeyVisibilityBtn');
-            const ytVideoIdInput = document.getElementById('ytVideoIdInput');
-            const writeModeSelect = document.getElementById('writeModeSelect');
-            const pollingIntervalSelect = document.getElementById('pollingIntervalSelect');
-            const connectYtBtn = document.getElementById('connectYtBtn');
-            const disconnectYtBtn = document.getElementById('disconnectYtBtn');
-            const ytConnectionBadge = document.getElementById('ytConnectionBadge');
-
-            // --- Application State ---
-            let nameQueue = [];
-            let isWriting = false;
-            let totalNamesWritten = 0;
-            let currentLineIndex = 0;
-            let maxLinesPerPage = 12;
-            let charDelayMs = 85;
-            let currentFont = "'Caveat', cursive";
-            let currentInkColor = "#1a365d";
-            let autoDemoInterval = null;
-
-            // YouTube Live Chat State
-            let ytPollingTimer = null;
-            let ytLiveChatId = null;
-            let ytNextPageToken = null;
-            let processedMessageIds = new Set();
-
-            // Web Audio API context for gentle pen scratch sound
-            let audioCtx = null;
-
-            // Sample Tamil/Indian Subscriber Names for Instant Demo
-            const sampleSubscribers = [
-                "Sriram", "Priya", "Karthik", "Anitha",
-                "Vijay", "Deepa", "Arun", "Meena",
-                "Kavitha", "Dinesh", "Divya", "Suresh",
-                "Santhosh", "Nandhini", "Harish", "Keerthana"
-            ];
-            let sampleIndex = 0;
-
-            // --- Initialization ---
-            function init() {
-                setTodayDate();
-                buildSpiralRings();
-                calculateLinesPerPage();
-                renderEmptyLines();
-
-                // Load saved API key from localStorage or fall back to pre-filled key
-                const savedKey = localStorage.getItem('yt_handwriting_apikey');
-                ytApiKeyInput.value = savedKey && savedKey.trim() !== '' ? savedKey : DEFAULT_API_KEY;
-
-                // Load last used video URL if present
-                const savedVideo = localStorage.getItem('yt_handwriting_videourl');
-                if (savedVideo) {
-                    ytVideoIdInput.value = savedVideo;
-                }
-
-                // Parse URL Query Parameters (?v=VIDEO_ID, &key=, &mode=, &interval=, &title=)
-                handleUrlAutoConnect();
-            }
-
-            /**
-             * Checks URLSearchParams on load:
-             * - ?v= / ?video= / ?id= : YouTube Video ID or URL -> auto-populates, hides drawer, connects live!
-             * - &key= : Optional API key override
-             * - &mode=author or &mode=text
-             * - &interval=5 / 8 / 10 / 15 (seconds)
-             * - &title=Custom+Notebook+Title
-             */
-            function handleUrlAutoConnect() {
-                try {
-                    const params = new URLSearchParams(window.location.search);
-                    const urlVideo = params.get('v') || params.get('video') || params.get('id');
-                    const urlKey = params.get('key') || params.get('apikey');
-                    const urlMode = params.get('mode');
-                    const urlInterval = params.get('interval');
-                    const urlTitle = params.get('title');
-
-                    if (urlKey && urlKey.trim() !== '') {
-                        ytApiKeyInput.value = urlKey.trim();
-                        localStorage.setItem('yt_handwriting_apikey', urlKey.trim());
-                    }
-
-                    if (urlMode === 'author' || urlMode === 'text') {
-                        writeModeSelect.value = urlMode;
-                    }
-
-                    if (urlInterval) {
-                        const sec = parseInt(urlInterval, 10);
-                        if (!isNaN(sec) && sec >= 3 && sec <= 60) {
-                            const ms = String(sec * 1000);
-                            // Add option if custom interval isn't in dropdown
-                            if (![...pollingIntervalSelect.options].some(o => o.value === ms)) {
-                                const opt = document.createElement('option');
-                                opt.value = ms;
-                                opt.textContent = `Every ${sec}s (URL)`;
-                                pollingIntervalSelect.appendChild(opt);
-                            }
-                            pollingIntervalSelect.value = ms;
-                        }
-                    }
-
-                    if (urlTitle && urlTitle.trim() !== '') {
-                        headerTitleInput.value = urlTitle.trim();
-                        notebookTitleDisplay.textContent = urlTitle.trim();
-                    }
-
-                    if (urlVideo && urlVideo.trim() !== '') {
-                        ytVideoIdInput.value = urlVideo.trim();
-                        // Automatically hide settings panel so Prism Live Web Widget starts clean
-                        enterCleanLiveMode();
-                        setFooterStatus('CONNECTING TO YT LIVE...', 'waiting');
-                        // Start connection immediately
-                        connectToYouTubeLive();
-                    }
-                } catch (e) {
-                    console.error('URL param parse error:', e);
-                }
-            }
-
-            function enterCleanLiveMode() {
-                controlsDrawer.classList.add('hidden-drawer');
-                toggleControlsBtn.classList.add('clean-live-mode');
-            }
-
-            function openControlsDrawer() {
-                controlsDrawer.classList.remove('hidden-drawer');
-                toggleControlsBtn.classList.remove('clean-live-mode');
-            }
-
-            function setFooterStatus(text, state = 'default') {
-                streamStatusText.textContent = text;
-                liveStatusPill.classList.remove('connected', 'error');
-                if (state === 'connected') {
-                    liveStatusPill.classList.add('connected');
-                } else if (state === 'error') {
-                    liveStatusPill.classList.add('error');
-                }
-            }
-
-            function setTodayDate() {
-                const now = new Date();
-                const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = now.getFullYear();
-                notebookDate.textContent = `Date: ${day}/${month}/${year}`;
-            }
-
-            // Generate realistic spiral rings along the left edge
-            function buildSpiralRings() {
-                spiralBinding.innerHTML = '';
-                const stageHeight = notebookPaper.clientHeight || 800;
-                const ringCount = Math.floor(stageHeight / 34);
-                for (let i = 0; i < ringCount; i++) {
-                    const unit = document.createElement('div');
-                    unit.className = 'spiral-unit';
-                    unit.innerHTML = `<div class="binder-hole"></div><div class="metal-ring"></div>`;
-                    spiralBinding.appendChild(unit);
-                }
-            }
-
-            // Calculate how many 46px ruled lines fit cleanly between header and footer
-            function calculateLinesPerPage() {
-                const paperHeight = notebookPaper.clientHeight || 750;
-                const availableHeight = paperHeight - 112 - 46; // minus header & footer
-                maxLinesPerPage = Math.max(5, Math.floor(availableHeight / 46));
-            }
-
-            function renderEmptyLines() {
-                linesContainer.innerHTML = '';
-                currentLineIndex = 0;
-                for (let i = 0; i < maxLinesPerPage; i++) {
-                    const row = document.createElement('div');
-                    row.className = 'name-row';
-                    row.dataset.rowIndex = i;
-                    linesContainer.appendChild(row);
-                }
-            }
-
-            window.addEventListener('resize', () => {
-                buildSpiralRings();
-                if (!isWriting && currentLineIndex === 0) {
-                    calculateLinesPerPage();
-                    renderEmptyLines();
-                }
-            });
-
-            // --- Sound Synthesis (Subtle Pen Scratching ASMR) ---
-            function playPenScratchSound() {
-                if (!soundToggle.checked) return;
-                try {
-                    if (!audioCtx) {
-                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    }
-                    if (audioCtx.state === 'suspended') {
-                        audioCtx.resume();
-                    }
-                    const duration = 0.045;
-                    const bufferSize = audioCtx.sampleRate * duration;
-                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) {
-                        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.4));
-                    }
-                    const noise = audioCtx.createBufferSource();
-                    noise.buffer = buffer;
-
-                    const filter = audioCtx.createBiquadFilter();
-                    filter.type = 'bandpass';
-                    filter.frequency.value = 2600 + Math.random() * 600;
-                    filter.Q.value = 2.5;
-
-                    const gain = audioCtx.createGain();
-                    gain.gain.value = 0.08;
-
-                    noise.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    noise.start();
-                } catch (e) {
-                    // Ignore audio autoplay restrictions if any
-                }
-            }
-
-            // --- FIFO Queue & Handwriting Engine ---
-            function sanitizeName(raw) {
-                if (!raw) return '';
-                let cleaned = raw.replace(/[\r\n]+/g, ' ').trim();
-                if (cleaned.length > 22) {
-                    cleaned = cleaned.substring(0, 22).trim();
-                }
-                return cleaned;
-            }
-
-            function enqueueName(rawName) {
-                const name = sanitizeName(rawName);
-                if (!name) return;
-
-                // Prevent duplicate consecutive entries in queue
-                if (nameQueue.length > 0 && nameQueue[nameQueue.length - 1].toLowerCase() === name.toLowerCase()) {
-                    return;
-                }
-                // Cap queue at 80 items so live stream remains responsive
-                if (nameQueue.length >= 80) {
-                    nameQueue.shift();
-                }
-
-                nameQueue.push(name);
-                updateQueueUI();
-                processQueue();
-            }
-
-            function updateQueueUI() {
-                queueCountDisplay.textContent = nameQueue.length;
-            }
-
-            async function processQueue() {
-                if (isWriting || nameQueue.length === 0) return;
-
-                isWriting = true;
-                const nextName = nameQueue.shift();
-                updateQueueUI();
-
-                // Flip to a fresh clean page when current page fills up
-                if (currentLineIndex >= maxLinesPerPage) {
-                    await turnNotebookPage();
-                }
-
-                await writeNameOnLine(nextName, currentLineIndex);
-
-                currentLineIndex++;
-                totalNamesWritten++;
-                totalCountDisplay.textContent = totalNamesWritten;
-
-                isWriting = false;
-
-                setTimeout(() => {
-                    processQueue();
-                }, 300);
-            }
-
-            function turnNotebookPage() {
-                return new Promise((resolve) => {
-                    writingPen.classList.remove('active');
-                    notebookPaper.classList.add('page-turning');
-                    setTimeout(() => {
-                        renderEmptyLines();
-                        notebookPaper.classList.remove('page-turning');
-                        setTimeout(resolve, 300);
-                    }, 480);
-                });
-            }
-
-            function writeNameOnLine(name, rowIndex) {
-                return new Promise((resolve) => {
-                    const row = linesContainer.children[rowIndex];
-                    if (!row) {
-                        resolve();
-                        return;
-                    }
-
-                    // Running serial number in left margin ("1.", "2.", etc.)
-                    const numSpan = document.createElement('span');
-                    numSpan.className = 'row-number';
-                    numSpan.textContent = `${totalNamesWritten + 1}.`;
-                    row.appendChild(numSpan);
-
-                    // Handwritten text wrapper
-                    const textWrapper = document.createElement('div');
-                    textWrapper.className = 'handwritten-text';
-                    textWrapper.style.fontFamily = currentFont;
-                    textWrapper.style.color = currentInkColor;
-                    row.appendChild(textWrapper);
-
-                    // Individual character spans for pen tracking
-                    const chars = Array.from(name);
-                    const charElements = chars.map((ch) => {
-                        const span = document.createElement('span');
-                        span.className = 'char-span';
-                        span.textContent = ch === ' ' ? '\u00A0' : ch;
-                        textWrapper.appendChild(span);
-                        return span;
-                    });
-
-                    // Heart / star doodle at the end of name
-                    const doodles = ['❤️', '✨', '💙', '🌟'];
-                    const badge = document.createElement('span');
-                    badge.className = 'heart-badge';
-                    badge.textContent = doodles[totalNamesWritten % doodles.length];
-                    row.appendChild(badge);
-
-                    // Position pen tip at start of line
-                    movePenToElement(row, true);
-                    writingPen.classList.add('active');
-
-                    let charIdx = 0;
-                    const writeNextChar = () => {
-                        if (charIdx < charElements.length) {
-                            const span = charElements[charIdx];
-                            span.classList.add('visible');
-                            movePenToElement(span, false);
-                            playPenScratchSound();
-                            charIdx++;
-                            const jitter = (Math.random() * 22) - 11;
-                            setTimeout(writeNextChar, Math.max(25, charDelayMs + jitter));
-                        } else {
-                            badge.classList.add('visible');
-                            movePenToElement(badge, false);
-                            setTimeout(() => {
-                                writingPen.classList.remove('active');
-                                resolve();
-                            }, 200);
-                        }
-                    };
-
-                    setTimeout(writeNextChar, 110);
-                });
-            }
-
-            // Moves the SVG Pen Nib (bottom-left at x=0, y=145) accurately to each character
-            function movePenToElement(el, isStart) {
-                const paperRect = notebookPaper.getBoundingClientRect();
-                const elRect = el.getBoundingClientRect();
-
-                const targetX = (isStart ? elRect.left + 8 : elRect.right) - paperRect.left;
-                const targetY = (elRect.bottom - 6) - paperRect.top;
-
-                writingPen.style.left = `${targetX}px`;
-                writingPen.style.top = `${targetY - 145}px`;
-            }
-
-            // --- Drawer & UI Event Listeners ---
-            toggleControlsBtn.addEventListener('click', openControlsDrawer);
-            closeDrawerBtn.addEventListener('click', enterCleanLiveMode);
-
-            toggleKeyVisibilityBtn.addEventListener('click', () => {
-                if (ytApiKeyInput.type === 'text') {
-                    ytApiKeyInput.type = 'password';
-                    toggleKeyVisibilityBtn.textContent = 'Show Key';
-                } else {
-                    ytApiKeyInput.type = 'text';
-                    toggleKeyVisibilityBtn.textContent = 'Hide Key';
-                }
-            });
-
-            ytApiKeyInput.addEventListener('input', () => {
-                localStorage.setItem('yt_handwriting_apikey', ytApiKeyInput.value.trim());
-            });
-
-            function showToast(msg, isError = false) {
-                statusToast.textContent = msg;
-                statusToast.classList.remove('hidden', 'bg-blue-900/70', 'border-blue-500/40', 'text-blue-200', 'bg-rose-900/80', 'border-rose-500/50', 'text-rose-200');
-                if (isError) {
-                    statusToast.classList.add('bg-rose-900/80', 'border-rose-500/50', 'text-rose-200');
-                } else {
-                    statusToast.classList.add('bg-blue-900/70', 'border-blue-500/40', 'text-blue-200');
-                }
-            }
-
-            // Manual Name Submission
-            function handleManualSubmit() {
-                const val = manualNameInput.value.trim();
-                if (!val) return;
-                enqueueName(val);
-                manualNameInput.value = '';
-                showToast(`Added "${val}" to notebook queue!`);
-            }
-
-            addManualNameBtn.addEventListener('click', handleManualSubmit);
-            manualNameInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') handleManualSubmit();
-            });
-
-            // Auto Demo Simulator
-            autoDemoBtn.addEventListener('click', () => {
-                if (autoDemoInterval) {
-                    clearInterval(autoDemoInterval);
-                    autoDemoInterval = null;
-                    autoDemoBtn.textContent = '▶ Start Auto Demo';
-                    autoDemoBtn.classList.remove('bg-emerald-600', 'text-white');
-                    if (!ytLiveChatId) setFooterStatus('LIVE CHAT READY', 'default');
-                    showToast('Auto Demo stopped.');
-                } else {
-                    const feedSample = () => {
-                        const name = sampleSubscribers[sampleIndex % sampleSubscribers.length];
-                        sampleIndex++;
-                        enqueueName(name);
-                    };
-                    feedSample();
-                    autoDemoInterval = setInterval(feedSample, 2400);
-                    autoDemoBtn.textContent = '⏹ Stop Demo';
-                    autoDemoBtn.classList.add('bg-emerald-600', 'text-white');
-                    setFooterStatus('DEMO LIVE ACTIVE', 'connected');
-                    showToast('Auto Demo started! Click "Go Live (Hide Panel)" to preview full screen.');
-                }
-            });
-
-            // Customization Listeners
-            headerTitleInput.addEventListener('input', (e) => {
-                notebookTitleDisplay.textContent = e.target.value || 'SUBSCRIBERS NOTEBOOK ❤️';
-            });
-
-            document.querySelectorAll('.ink-swatch').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.ink-swatch').forEach(b => b.classList.remove('border-2', 'border-white'));
-                    btn.classList.add('border-2', 'border-white');
-                    currentInkColor = btn.dataset.color;
-                });
-            });
-
-            fontSelect.addEventListener('change', (e) => {
-                currentFont = e.target.value;
-            });
-
-            speedRange.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value, 10);
-                charDelayMs = 205 - val;
-                if (charDelayMs < 65) speedLabel.textContent = 'Fast';
-                else if (charDelayMs > 120) speedLabel.textContent = 'Slow';
-                else speedLabel.textContent = 'Normal';
-            });
-
-            clearPageBtn.addEventListener('click', async () => {
-                if (!isWriting) {
-                    await turnNotebookPage();
-                    showToast('Turned to a fresh clean page.');
-                }
-            });
-
-            resetAllBtn.addEventListener('click', async () => {
-                nameQueue = [];
-                updateQueueUI();
-                totalNamesWritten = 0;
-                totalCountDisplay.textContent = '0';
-                if (!isWriting) {
-                    await turnNotebookPage();
-                }
-                showToast('Counter and notebook page reset.');
-            });
-
-            // --- YouTube Data API v3 Live Chat Integration ---
-            function extractYouTubeVideoId(input) {
-                const trimmed = input.trim();
-                if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-                const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
-                    /[?&]v=([a-zA-Z0-9_-]{11})/
-                ];
-                for (const regex of patterns) {
-                    const match = trimmed.match(regex);
-                    if (match && match[1]) return match[1];
-                }
-                return null;
-            }
-
-            async function connectToYouTubeLive() {
-                const apiKey = ytApiKeyInput.value.trim();
-                const rawVideo = ytVideoIdInput.value.trim();
-
-                if (!apiKey) {
-                    const msg = 'Please enter your YouTube Data API v3 Key.';
-                    showToast(msg, true);
-                    setFooterStatus('MISSING API KEY', 'error');
-                    return;
-                }
-                const videoId = extractYouTubeVideoId(rawVideo);
-                if (!videoId) {
-                    const msg = 'Invalid YouTube Live Video ID or URL.';
-                    showToast(msg, true);
-                    setFooterStatus('INVALID VIDEO ID', 'error');
-                    return;
-                }
-
-                // Persist API key and Video URL
-                localStorage.setItem('yt_handwriting_apikey', apiKey);
-                localStorage.setItem('yt_handwriting_videourl', rawVideo);
-
-                ytConnectionBadge.textContent = 'Connecting...';
-                ytConnectionBadge.className = 'text-[11px] bg-amber-600 text-white px-2.5 py-0.5 rounded-full font-semibold';
-                setFooterStatus('CONNECTING...', 'default');
-
-                try {
-                    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoId}&key=${encodeURIComponent(apiKey)}`;
-                    const res = await fetch(videoUrl);
-                    const data = await res.json();
-
-                    if (data.error) {
-                        throw new Error(`API Error: ${data.error.message}`);
-                    }
-                    if (!data.items || data.items.length === 0) {
-                        throw new Error('Video not found. Check your Video ID.');
-                    }
-
-                    const liveDetails = data.items[0].liveStreamingDetails;
-                    if (!liveDetails || !liveDetails.activeLiveChatId) {
-                        throw new Error('No active Live Chat found on this video.');
-                    }
-
-                    ytLiveChatId = liveDetails.activeLiveChatId;
-                    ytNextPageToken = null;
-                    processedMessageIds.clear();
-
-                    ytConnectionBadge.textContent = 'Connected - Live ●';
-                    ytConnectionBadge.className = 'text-[11px] bg-emerald-600 text-white px-2.5 py-0.5 rounded-full font-bold';
-                    setFooterStatus('YT LIVE CONNECTED', 'connected');
-                    connectYtBtn.classList.add('hidden');
-                    disconnectYtBtn.classList.remove('hidden');
-
-                    showToast('✅ Connected to YouTube Live Chat! Reading incoming comments...');
-                    pollYouTubeMessages(apiKey);
-                } catch (err) {
-                    ytConnectionBadge.textContent = 'Error';
-                    ytConnectionBadge.className = 'text-[11px] bg-rose-600 text-white px-2.5 py-0.5 rounded-full font-semibold';
-                    setFooterStatus(`ERROR: ${err.message}`, 'error');
-                    showToast(err.message, true);
-                }
-            }
-
-            async function pollYouTubeMessages(apiKey) {
-                if (!ytLiveChatId) return;
-
-                try {
-                    let chatUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(ytLiveChatId)}&part=snippet,authorDetails&key=${encodeURIComponent(apiKey)}`;
-                    if (ytNextPageToken) {
-                        chatUrl += `&pageToken=${encodeURIComponent(ytNextPageToken)}`;
-                    }
-
-                    const res = await fetch(chatUrl);
-                    const data = await res.json();
-
-                    if (data.error) {
-                        throw new Error(data.error.message);
-                    }
-
-                    ytNextPageToken = data.nextPageToken;
-                    const items = data.items || [];
-
-                    // Skip backlog messages on first fetch so only new live comments are written
-                    const isFirstBatch = processedMessageIds.size === 0;
-                    const writeMode = writeModeSelect.value;
-
-                    items.forEach((item) => {
-                        if (!processedMessageIds.has(item.id)) {
-                            processedMessageIds.add(item.id);
-                            if (!isFirstBatch && item.snippet) {
-                                const msg = (item.snippet.displayMessage || '').trim();
-                                const author = (item.authorDetails && item.authorDetails.displayName) ? item.authorDetails.displayName.trim() : '';
-
-                                if (writeMode === 'author') {
-                                    enqueueName(author || msg);
-                                } else {
-                                    // Write comment text if reasonable length, otherwise fallback to author name
-                                    const targetText = (msg.length >= 2 && msg.length <= 22) ? msg : author;
-                                    enqueueName(targetText);
-                                }
-                            }
-                        }
-                    });
-
-                    const userSelectedInterval = parseInt(pollingIntervalSelect.value, 10) || 8000;
-                    const pollInterval = Math.max(userSelectedInterval, data.pollingIntervalMillis || 4000);
-                    ytPollingTimer = setTimeout(() => pollYouTubeMessages(apiKey), pollInterval);
-                } catch (err) {
-                    setFooterStatus(`STOPPED: ${err.message}`, 'error');
-                    showToast(`Chat Polling Stopped: ${err.message}`, true);
-                    disconnectYouTubeLive();
-                }
-            }
-
-            function disconnectYouTubeLive() {
-                if (ytPollingTimer) {
-                    clearTimeout(ytPollingTimer);
-                    ytPollingTimer = null;
-                }
-                ytLiveChatId = null;
-                ytConnectionBadge.textContent = 'Disconnected';
-                ytConnectionBadge.className = 'text-[11px] bg-slate-700 text-slate-300 px-2.5 py-0.5 rounded-full font-semibold';
-                connectYtBtn.classList.remove('hidden');
-                disconnectYtBtn.classList.add('hidden');
-            }
-
-            connectYtBtn.addEventListener('click', connectToYouTubeLive);
-            disconnectYtBtn.addEventListener('click', () => {
-                disconnectYouTubeLive();
-                setFooterStatus('LIVE CHAT READY', 'default');
-                showToast('Disconnected from YouTube Live Chat.');
-            });
-
-            // Initialize App
-            init();
-        });
-    </script>
+    <div id="canvas-wrapper">
+      <canvas id="writing-canvas"></canvas>
+
+      <!-- Realistic Blue/Gold Pen SVG -->
+      <svg id="pen" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Nib -->
+        <path d="M6 114 L22 92 L28 98 Z" fill="#cbd5e1" stroke="#475569" stroke-width="1.5"/>
+        <path d="M6 114 L15 102" stroke="#1e293b" stroke-width="1.5"/>
+        <!-- Grip -->
+        <path d="M22 92 L36 78 L42 84 L28 98 Z" fill="#1e293b"/>
+        <!-- Gold Ring -->
+        <path d="M36 78 L40 74 L46 80 L42 84 Z" fill="#f59e0b"/>
+        <!-- Pen Body -->
+        <path d="M40 74 L98 16 C102 12 108 18 104 22 L46 80 Z" fill="#1d4ed8"/>
+        <!-- Highlight -->
+        <path d="M44 72 L96 20" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Clip -->
+        <path d="M74 34 L94 14 L98 18 L78 38 Z" fill="#f59e0b"/>
+      </svg>
+    </div>
+
+    <div id="footer-bar">Names Written: <span id="written-count">0</span></div>
+    <button id="open-settings-btn" onclick="toggleSettings(true)">⚙ Controls</button>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settings-panel">
+    <div class="panel-header">
+      <div>
+        <h2>✍️ Live Stream Settings</h2>
+        <div style="font-size: 11px; color: #94a3b8;">Auto-Connects when ?v=VIDEO_ID is in URL</div>
+      </div>
+      <button class="btn-go-live" onclick="toggleSettings(false)">✓ Go Live (Hide Panel)</button>
+    </div>
+
+    <div id="status-message" class="status-box">Ready. Add ?v=VIDEO_ID to URL for Prism Live auto-connect.</div>
+
+    <!-- YouTube API Section -->
+    <div class="card">
+      <div class="card-title">
+        <span>1. YouTube Live Chat Connect</span>
+        <span id="conn-pill" style="color:#94a3b8;">Idle</span>
+      </div>
+
+      <div>
+        <label>YouTube Data API v3 Key</label>
+        <input type="text" id="api-key-input" value="AIzaSyCn5gyMHsRiulXxeoPKi2TeIQVZyNhqwPA" />
+      </div>
+
+      <div>
+        <label>YouTube Live Video URL or Video ID</label>
+        <input type="text" id="video-url-input" placeholder="https://youtube.com/live/xxxxx or Video ID" />
+      </div>
+
+      <div class="row">
+        <div>
+          <label>What to Write?</label>
+          <select id="write-mode">
+            <option value="comment" selected>Write Comment Text</option>
+            <option value="author">Write Commenter Name</option>
+          </select>
+        </div>
+        <div>
+          <label>Check Speed (Quota Saver)</label>
+          <select id="poll-interval">
+            <option value="6000">Every 6s (~3.3 hrs free)</option>
+            <option value="8000" selected>Every 8s (~4.5 hrs free)</option>
+            <option value="12000">Every 12s (~6.5 hrs free)</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="connect-btn" onclick="startYouTubeConnection()">🔴 Connect YouTube Live</button>
+    </div>
+
+    <!-- Manual Test Section -->
+    <div class="card">
+      <div class="card-title">
+        <span>2. Test / Demo Mode</span>
+        <button class="btn-secondary" id="demo-btn" onclick="toggleDemo()">▶ Start Auto Demo</button>
+      </div>
+      <div class="row">
+        <input type="text" id="manual-name" placeholder="Type name (e.g. Sriram)" />
+        <button class="btn-secondary" style="flex:0 0 110px; background:#2563eb;" onclick="addManualName()">Write Name</button>
+      </div>
+    </div>
+
+    <!-- Customization -->
+    <div class="card">
+      <div class="card-title"><span>3. Notebook & Pen Style</span></div>
+      <div>
+        <label>Notebook Top Title</label>
+        <input type="text" id="title-input" value="SUBSCRIBERS NOTEBOOK ❤️" oninput="updateTitle(this.value)" />
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Pen Ink Color</label>
+          <div class="color-dots">
+            <div class="color-dot active" style="background:#1a237e;" onclick="setInkColor('#1a237e', this)"></div>
+            <div class="color-dot" style="background:#0f172a;" onclick="setInkColor('#0f172a', this)"></div>
+            <div class="color-dot" style="background:#b91c1c;" onclick="setInkColor('#b91c1c', this)"></div>
+            <div class="color-dot" style="background:#15803d;" onclick="setInkColor('#15803d', this)"></div>
+          </div>
+        </div>
+        <div>
+          <label>Handwriting Font</label>
+          <select id="font-select" onchange="currentFont = this.value">
+            <option value="Caveat">Caveat (Natural Cursive)</option>
+            <option value="Kalam">Kalam (Bold Marker)</option>
+            <option value="Indie Flower">Indie Flower (Neat)</option>
+            <option value="Patrick Hand">Patrick Hand (Clean)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="align-items:center;">
+        <div>
+          <label>Writing Speed</label>
+          <input type="range" id="speed-slider" min="2" max="10" value="5" />
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding-top:16px;">
+          <input type="checkbox" id="sound-toggle" checked style="width:18px; height:18px;" />
+          <label style="margin:0;">Pen Sound</label>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn-secondary" onclick="clearNotebook()">🧹 Clear Page</button>
+        <button class="btn-secondary" onclick="resetCounter()">Reset Count</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Pre-configured working API key
+    const DEFAULT_API_KEY = "AIzaSyCn5gyMHsRiulXxeoPKi2TeIQVZyNhqwPA";
+
+    const canvas = document.getElementById('writing-canvas');
+    const ctx = canvas.getContext('2d');
+    const pen = document.getElementById('pen');
+
+    let inkColor = '#1a237e';
+    let currentFont = 'Caveat';
+    let currentLine = 0;
+    let totalWritten = 0;
+    let queue = [];
+    let isWriting = false;
+
+    // YouTube Live polling state
+    let isPolling = false;
+    let pollTimer = null;
+    let liveChatId = null;
+    let nextPageToken = null;
+    let seenMessageIds = new Set();
+
+    // Demo state
+    let demoInterval = null;
+    const sampleNames = ["Sriram", "Dinesh", "Priya", "Karthik", "Anitha", "Vijay", "Divya", "Arun", "Kavya", "Manoj"];
+
+    // Web Audio API for subtle pen scratch sound
+    let audioCtx = null;
+    function playScratchSound() {
+      if (!document.getElementById('sound-toggle').checked) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const bufferSize = audioCtx.sampleRate * 0.04;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.04;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1800;
+
+        noise.connect(filter);
+        filter.connect(audioCtx.destination);
+        noise.start();
+      } catch (e) {}
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.drawImage(tempCanvas, 0, 0, rect.width, rect.height);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function toggleSettings(show) {
+      const panel = document.getElementById('settings-panel');
+      if (show) panel.classList.remove('hidden');
+      else panel.classList.add('hidden');
+    }
+
+    function updateTitle(val) {
+      document.getElementById('notebook-title').textContent = val || "SUBSCRIBERS NOTEBOOK ❤️";
+    }
+
+    function setInkColor(color, el) {
+      inkColor = color;
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function clearNotebook() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      currentLine = 0;
+    }
+
+    function resetCounter() {
+      totalWritten = 0;
+      document.getElementById('written-count').textContent = '0';
+    }
+
+    function setStatus(msg, type = '') {
+      const box = document.getElementById('status-message');
+      box.textContent = msg;
+      box.className = 'status-box ' + (type === 'ok' ? 'status-ok' : type === 'err' ? 'status-err' : '');
+    }
+
+    function extractVideoId(input) {
+      if (!input) return null;
+      input = input.trim();
+      if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+      const patterns = [
+        /(?:v=|\/live\/|youtu\.be\/|\/embed\/)([a-zA-Z0-9_-]{11})/
+      ];
+      for (const p of patterns) {
+        const m = input.match(p);
+        if (m) return m[1];
+      }
+      return null;
+    }
+
+    function enqueueText(text) {
+      const clean = text.replace(/[\r\n]+/g, ' ').trim();
+      if (!clean) return;
+      const clipped = clean.length > 26 ? clean.slice(0, 26) + '..' : clean;
+      queue.push(clipped);
+      processQueue();
+    }
+
+    async function processQueue() {
+      if (isWriting || queue.length === 0) return;
+      isWriting = true;
+
+      const text = queue.shift();
+      const lineHeight = 48;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const maxLines = Math.floor((rect.height - 30) / lineHeight);
+
+      if (currentLine >= maxLines) {
+        await new Promise(r => setTimeout(r, 600));
+        clearNotebook();
+      }
+
+      const startX = 72;
+      const baselineY = (currentLine + 1) * lineHeight - 10;
+      const fontSize = 31;
+
+      ctx.font = `700 ${fontSize}px '${currentFont}', cursive`;
+      ctx.fillStyle = inkColor;
+
+      let cursorX = startX;
+      pen.style.opacity = '1';
+
+      const speedVal = parseInt(document.getElementById('speed-slider').value, 10);
+      const charDelay = Math.max(25, 130 - speedVal * 10);
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const charWidth = ctx.measureText(ch).width;
+
+        if (cursorX + charWidth > rect.width - 20) break;
+
+        // Move pen tip to character position with slight natural jitter
+        const jitterY = Math.sin(i * 1.7) * 3;
+        const rot = -12 + Math.cos(i * 1.3) * 4;
+        pen.style.transform = `translate(${cursorX - 6}px, ${baselineY - 104 + jitterY}px) rotate(${rot}deg)`;
+
+        ctx.fillText(ch, cursorX, baselineY);
+        playScratchSound();
+
+        cursorX += charWidth;
+        await new Promise(r => setTimeout(r, charDelay));
+      }
+
+      currentLine++;
+      totalWritten++;
+      document.getElementById('written-count').textContent = totalWritten;
+
+      // Lift pen slightly after finishing word
+      pen.style.transform = `translate(${cursorX + 10}px, ${baselineY - 125}px) rotate(-18deg)`;
+      await new Promise(r => setTimeout(r, 220));
+
+      if (queue.length === 0) {
+        pen.style.opacity = '0';
+      }
+
+      isWriting = false;
+      processQueue();
+    }
+
+    function addManualName() {
+      const inp = document.getElementById('manual-name');
+      if (inp.value.trim()) {
+        enqueueText(inp.value);
+        inp.value = '';
+      }
+    }
+
+    function toggleDemo() {
+      const btn = document.getElementById('demo-btn');
+      if (demoInterval) {
+        clearInterval(demoInterval);
+        demoInterval = null;
+        btn.textContent = '▶ Start Auto Demo';
+      } else {
+        let idx = 0;
+        enqueueText(sampleNames[idx++ % sampleNames.length]);
+        demoInterval = setInterval(() => {
+          enqueueText(sampleNames[idx++ % sampleNames.length]);
+        }, 2500);
+        btn.textContent = '⏹ Stop Demo';
+      }
+    }
+
+    async function startYouTubeConnection() {
+      if (isPolling) {
+        stopYouTubeConnection();
+        return;
+      }
+
+      const apiKey = document.getElementById('api-key-input').value.trim() || DEFAULT_API_KEY;
+      const rawVideo = document.getElementById('video-url-input').value.trim();
+      const videoId = extractVideoId(rawVideo);
+
+      if (!videoId) {
+        setStatus('Please enter a valid YouTube Live Video URL or 11-character Video ID.', 'err');
+        return;
+      }
+
+      setStatus('Connecting to YouTube Live stream...');
+      document.getElementById('conn-pill').textContent = 'Connecting...';
+
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${encodeURIComponent(apiKey)}`);
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error.message || 'API Error');
+        }
+
+        if (!data.items || data.items.length === 0) {
+          throw new Error('Video not found. Check Video ID.');
+        }
+
+        const details = data.items[0].liveStreamingDetails;
+        if (!details || !details.activeLiveChatId) {
+          throw new Error('Live chat not active yet. Start stream first or wait a few seconds.');
+        }
+
+        liveChatId = details.activeLiveChatId;
+        nextPageToken = null;
+        isPolling = true;
+
+        document.getElementById('connect-btn').textContent = '⏹ Disconnect Live Chat';
+        document.getElementById('connect-btn').style.background = '#475569';
+        document.getElementById('conn-pill').textContent = 'Connected';
+        document.getElementById('conn-pill').style.color = '#4ade80';
+        document.getElementById('live-badge').style.display = 'flex';
+        setStatus('✅ Connected to YouTube Live Chat! Reading incoming comments...', 'ok');
+
+        // Auto-hide panel when connected via URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('v')) {
+          toggleSettings(false);
+        }
+
+        pollLiveChat(apiKey);
+      } catch (err) {
+        setStatus('API Error: ' + err.message, 'err');
+        document.getElementById('conn-pill').textContent = 'Error';
+        document.getElementById('conn-pill').style.color = '#f87171';
+      }
+    }
+
+    function stopYouTubeConnection() {
+      isPolling = false;
+      if (pollTimer) clearTimeout(pollTimer);
+      document.getElementById('connect-btn').textContent = '🔴 Connect YouTube Live';
+      document.getElementById('connect-btn').style.background = '#dc2626';
+      document.getElementById('conn-pill').textContent = 'Idle';
+      document.getElementById('conn-pill').style.color = '#94a3b8';
+      document.getElementById('live-badge').style.display = 'none';
+      setStatus('Disconnected from YouTube Live.');
+    }
+
+    async function pollLiveChat(apiKey) {
+      if (!isPolling || !liveChatId) return;
+
+      try {
+        let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(liveChatId)}&part=snippet,authorDetails&key=${encodeURIComponent(apiKey)}`;
+        if (nextPageToken) url += `&pageToken=${encodeURIComponent(nextPageToken)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus('Chat Poll Error: ' + data.error.message, 'err');
+          stopYouTubeConnection();
+          return;
+        }
+
+        const isFirstFetch = !nextPageToken;
+        nextPageToken = data.nextPageToken;
+
+        if (data.items && data.items.length > 0) {
+          const mode = document.getElementById('write-mode').value;
+          for (const item of data.items) {
+            if (seenMessageIds.has(item.id)) continue;
+            seenMessageIds.add(item.id);
+
+            // Skip old backlog messages on initial connect, or write last 2
+            if (isFirstFetch && data.items.indexOf(item) < data.items.length - 2) continue;
+
+            const author = item.authorDetails?.displayName || '';
+            const msg = item.snippet?.displayMessage || '';
+            enqueueText(mode === 'author' ? author : msg);
+          }
+        }
+
+        const userInterval = parseInt(document.getElementById('poll-interval').value, 10);
+        const apiInterval = data.pollingIntervalMillis || 5000;
+        const delay = Math.max(userInterval, apiInterval);
+
+        pollTimer = setTimeout(() => pollLiveChat(apiKey), delay);
+      } catch (err) {
+        pollTimer = setTimeout(() => pollLiveChat(apiKey), 8000);
+      }
+    }
+
+    // Auto-init from URL parameters (?v=VIDEO_ID & optional ?key=API_KEY)
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const customKey = params.get('key');
+      const videoParam = params.get('v');
+
+      if (customKey) {
+        document.getElementById('api-key-input').value = customKey;
+      }
+
+      if (videoParam) {
+        document.getElementById('video-url-input').value = videoParam;
+        // Hide settings panel immediately for clean stream overlay
+        toggleSettings(false);
+        startYouTubeConnection();
+      }
+    });
+  </script>
 </body>
 </html>
