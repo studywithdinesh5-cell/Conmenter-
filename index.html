@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Live Handwriting Notebook - Subscriber Name Writer</title>
+    <title>Live Handwriting Notebook - Auto-Connect Stream Overlay</title>
     <!-- Tailwind CSS for responsive layout & controls -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for Realistic Handwriting & Clean UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Dancing+Script:wght@700&family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Dancing+Script:wght@700&family=Indie+Flower&family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         /* Custom Realistic Notebook & Pen Styles */
@@ -18,7 +18,7 @@
             --line-color: #a3c6e8;
             --margin-color: #e57373;
             --ink-color: #1a365d; /* Royal Blue Ballpoint */
-            --line-height: 48px;
+            --line-height: 46px;
         }
 
         * {
@@ -81,8 +81,8 @@
                 linear-gradient(to bottom, transparent calc(var(--line-height) - 1.5px), var(--line-color) calc(var(--line-height) - 1.5px), var(--line-color) var(--line-height));
             background-size: 16px 16px, 100% var(--line-height);
             background-position: 0 0, 0 112px; /* Align lines below header */
-            padding-left: 68px;
-            padding-right: 18px;
+            padding-left: 66px;
+            padding-right: 16px;
             display: flex;
             flex-direction: column;
             transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
@@ -99,7 +99,7 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            left: 54px;
+            left: 52px;
             width: 4px;
             border-left: 1.5px solid var(--margin-color);
             border-right: 1px solid rgba(229, 115, 115, 0.65);
@@ -113,7 +113,7 @@
             top: 0;
             bottom: 0;
             left: 0;
-            width: 42px;
+            width: 40px;
             background: linear-gradient(90deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0.02) 70%, transparent 100%);
             display: flex;
             flex-direction: column;
@@ -136,14 +136,14 @@
             height: 14px;
             border-radius: 50%;
             background: #1e293b;
-            margin-left: 20px;
+            margin-left: 18px;
             box-shadow: inset 1px 2px 3px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.85);
         }
 
         .metal-ring {
             position: absolute;
             left: -4px;
-            width: 32px;
+            width: 30px;
             height: 7px;
             border-radius: 4px;
             background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 45%, #475569 85%, #cbd5e1 100%);
@@ -154,7 +154,7 @@
         /* Notebook Top Header Area */
         .notebook-header {
             height: 112px;
-            padding-top: 16px;
+            padding-top: 14px;
             padding-bottom: 8px;
             border-bottom: 2px solid var(--margin-color);
             display: flex;
@@ -168,25 +168,25 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: #64748b;
             font-weight: 600;
             letter-spacing: 0.02em;
-            padding-right: 4px;
+            padding-right: 36px; /* Space for corner toggle icon */
         }
 
         .date-box {
             border: 1.5px solid #94a3b8;
             border-radius: 6px;
             padding: 2px 8px;
-            background: rgba(255,255,255,0.65);
+            background: rgba(255,255,255,0.7);
             font-family: 'Kalam', cursive;
             color: #334155;
         }
 
         .notebook-title {
             font-family: 'Kalam', cursive;
-            font-size: clamp(1.3rem, 4.6vw, 1.72rem);
+            font-size: clamp(1.28rem, 4.6vw, 1.7rem);
             font-weight: 700;
             color: #b91c1c;
             line-height: 1.15;
@@ -216,12 +216,12 @@
 
         .row-number {
             position: absolute;
-            left: -44px;
-            bottom: 8px;
-            width: 26px;
+            left: -42px;
+            bottom: 7px;
+            width: 24px;
             text-align: right;
             font-family: 'Caveat', cursive;
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: #64748b;
             user-select: none;
@@ -229,7 +229,7 @@
 
         .handwritten-text {
             font-family: 'Caveat', cursive;
-            font-size: clamp(1.75rem, 6.2vw, 2.25rem);
+            font-size: clamp(1.7rem, 6vw, 2.2rem);
             font-weight: 700;
             color: var(--ink-color);
             line-height: 1;
@@ -253,7 +253,7 @@
 
         .heart-badge {
             margin-left: 8px;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             opacity: 0;
             transform: scale(0);
             transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -267,11 +267,11 @@
         /* Realistic Animated Fountain / Ballpoint Pen */
         #writing-pen {
             position: absolute;
-            width: 150px;
-            height: 150px;
+            width: 145px;
+            height: 145px;
             pointer-events: none;
             z-index: 25;
-            /* Exact nib tip is at bottom-left (0, 150) */
+            /* Exact nib tip is at bottom-left (0, 145) */
             transform-origin: 0% 100%;
             transition: left 0.065s linear, top 0.065s linear, opacity 0.25s ease, transform 0.1s ease;
             opacity: 0;
@@ -295,9 +295,10 @@
             align-items: center;
             justify-content: space-between;
             border-top: 1px dashed rgba(148, 163, 184, 0.55);
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #475569;
             padding-bottom: 6px;
+            gap: 8px;
         }
 
         .live-pill {
@@ -310,13 +311,30 @@
             padding: 2px 10px;
             border-radius: 999px;
             font-weight: 700;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
+            max-width: 72%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .live-pill.connected {
+            background: rgba(16, 185, 129, 0.12);
+            color: #047857;
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        .live-pill.error {
+            background: rgba(225, 29, 72, 0.12);
+            color: #be123c;
+            border-color: rgba(225, 29, 72, 0.35);
         }
 
         .live-dot {
             width: 7px;
             height: 7px;
-            background: #ef4444;
+            min-width: 7px;
+            background: currentColor;
             border-radius: 50%;
             animation: pulseDot 1.2s infinite;
         }
@@ -332,13 +350,13 @@
             top: 12px;
             right: 12px;
             z-index: 40;
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.88);
             color: #fff;
             border: 1px solid rgba(255,255,255,0.2);
             backdrop-filter: blur(6px);
             padding: 6px 12px;
             border-radius: 999px;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
@@ -353,11 +371,14 @@
             transform: scale(1.04);
         }
 
-        /* Clean Stream Mode: almost invisible corner tap target when user clicks "Go Live (Hide Panel)" */
+        /* Subtle Semi-Transparent Gear Icon in Clean Stream Mode */
         #toggle-controls-btn.clean-live-mode {
-            opacity: 0.08;
-            padding: 8px 10px;
-            background: rgba(15, 23, 42, 0.5);
+            opacity: 0.22;
+            padding: 6px 8px;
+            background: rgba(15, 23, 42, 0.55);
+        }
+        #toggle-controls-btn.clean-live-mode #toggle-btn-label {
+            display: none;
         }
         #toggle-controls-btn.clean-live-mode:hover,
         #toggle-controls-btn.clean-live-mode:active {
@@ -400,7 +421,7 @@
     <!-- Main 9:16 Vertical Stream Stage -->
     <div class="stream-stage" id="streamStage">
 
-        <!-- Top-Right Gear Button / Subtle Corner Tap Area -->
+        <!-- Top-Right Gear Button / Subtle Corner Icon -->
         <button id="toggle-controls-btn" title="Open Live Stream Settings">
             <span>⚙️</span>
             <span id="toggle-btn-label">Controls</span>
@@ -418,7 +439,7 @@
             <div class="notebook-header">
                 <div class="header-meta">
                     <span class="date-box" id="notebookDate">Date: 21/11/2026</span>
-                    <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold text-xs shadow-sm mr-20 sm:mr-24">
+                    <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold text-xs shadow-sm">
                         ✍️ Written: <span id="totalCountDisplay">0</span>
                     </span>
                 </div>
@@ -432,18 +453,18 @@
 
             <!-- Bottom Status Footer -->
             <div class="stream-footer">
-                <div class="live-pill">
+                <div class="live-pill" id="liveStatusPill">
                     <span class="live-dot"></span>
                     <span id="streamStatusText">LIVE CHAT READY</span>
                 </div>
-                <div class="text-xs font-semibold text-slate-500">
+                <div class="text-xs font-semibold text-slate-500 whitespace-nowrap">
                     Queue: <span id="queueCountDisplay" class="text-slate-800 font-bold">0</span>
                 </div>
             </div>
 
             <!-- Animated Realistic Fountain / Ballpoint Pen -->
             <div id="writing-pen">
-                <svg viewBox="0 0 150 150" width="150" height="150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 150 150" width="145" height="145" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <!-- Pen Shadow on Paper -->
                     <path d="M2 148 L120 45 L128 53 L6 149 Z" fill="rgba(0,0,0,0.16)"/>
                     <!-- Metallic Nib Tip (Exact tip at x=0, y=150) -->
@@ -475,7 +496,7 @@
                     <h2 class="text-base font-bold text-white flex items-center gap-1.5">
                         <span>✍️ Live Stream Settings</span>
                     </h2>
-                    <p class="text-[11px] text-slate-400">API Key Pre-loaded • Ready for YouTube Live</p>
+                    <p class="text-[11px] text-slate-400">Supports ?v=VIDEO_ID Auto-Connect URL</p>
                 </div>
                 <button id="closeDrawerBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition">
                     ✓ Go Live (Hide Panel)
@@ -495,14 +516,11 @@
                 <!-- Pre-filled API Key Field -->
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <label class="text-[11px] text-slate-300 font-medium">YouTube Data API v3 Key (Pre-filled)</label>
+                        <label class="text-[11px] text-slate-300 font-medium">YouTube Data API v3 Key</label>
                         <button type="button" id="toggleKeyVisibilityBtn" class="text-[10px] text-blue-400 hover:underline">Hide Key</button>
                     </div>
                     <input type="text" id="ytApiKeyInput" value="AIzaSyB9c-xdK0ur_0TmCuvN_-xul" placeholder="AIzaSy..." 
                         class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs font-mono text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-red-400">
-                    <p class="text-[10px] text-slate-400 mt-1">
-                        * கடைசி எழுத்து ஏதேனும் விடுபட்டிருந்தால் இங்கே திருத்திக் கொள்ளலாம் (தானாக சேமிக்கப்படும்).
-                    </p>
                 </div>
 
                 <!-- YouTube Live Video URL / ID -->
@@ -510,6 +528,9 @@
                     <label class="block text-[11px] text-slate-300 font-medium mb-1">YouTube Live Video URL or Video ID</label>
                     <input type="text" id="ytVideoIdInput" placeholder="https://youtube.com/live/xxxxx or Video ID" 
                         class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-400">
+                    <p class="text-[10px] text-slate-400 mt-1">
+                        💡 Prism Live டிப்ஸ்: உங்கள் GitHub லிங்க் முடிவில் <code class="text-amber-300">?v=VIDEO_ID</code> சேர்த்து Web Widget-ல் கொடுத்தால் தானாகவே கனெக்ட் ஆகும்!
+                    </p>
                 </div>
 
                 <!-- Mode Toggle & Polling Interval -->
@@ -517,16 +538,17 @@
                     <div>
                         <label class="block text-[10px] text-slate-400 mb-1">What to Write?</label>
                         <select id="writeModeSelect" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs text-white">
-                            <option value="comment">Write Comment Text</option>
-                            <option value="author">Write Commenter's Name</option>
+                            <option value="text">Write Comment Text</option>
+                            <option value="author">Write Commenter Name</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-[10px] text-slate-400 mb-1">Check Speed (Quota Saver)</label>
                         <select id="pollingIntervalSelect" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs text-white">
-                            <option value="8000" selected>Every 8s (~4.5 hrs free)</option>
                             <option value="5000">Every 5s (~2.7 hrs free)</option>
-                            <option value="12000">Every 12s (~6.6 hrs free)</option>
+                            <option value="8000" selected>Every 8s (~4.5 hrs free)</option>
+                            <option value="10000">Every 10s (~5.5 hrs free)</option>
+                            <option value="15000">Every 15s (~8.3 hrs free)</option>
                         </select>
                     </div>
                 </div>
@@ -586,7 +608,7 @@
                         <select id="fontSelect" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-2 py-1.5 text-xs text-white">
                             <option value="'Caveat', cursive">Caveat (Natural Cursive)</option>
                             <option value="'Kalam', cursive">Kalam (Bold Marker)</option>
-                            <option value="'Patrick Hand', cursive">Patrick Hand (Neat Print)</option>
+                            <option value="'Indie Flower', cursive">Indie Flower (Neat Script)</option>
                             <option value="'Dancing Script', cursive">Dancing Script (Calligraphy)</option>
                         </select>
                     </div>
@@ -623,8 +645,9 @@
     <script>
         /**
          * Live Handwriting Notebook Web Application
-         * Pre-configured with YouTube Data API v3 integration, FIFO queue,
-         * character-by-character pen tracking animation, and Web Audio scratch synthesis.
+         * Supports URL parameter auto-connect (?v=VIDEO_ID, &key=, &mode=, &interval=),
+         * automatic clean-mode panel hiding for Prism Live / OBS Web Widgets,
+         * FIFO comment queue, and smooth character-by-character pen tracking.
          */
         document.addEventListener('DOMContentLoaded', () => {
             const DEFAULT_API_KEY = "AIzaSyB9c-xdK0ur_0TmCuvN_-xul";
@@ -638,6 +661,7 @@
             const queueCountDisplay = document.getElementById('queueCountDisplay');
             const notebookTitleDisplay = document.getElementById('notebookTitleDisplay');
             const notebookDate = document.getElementById('notebookDate');
+            const liveStatusPill = document.getElementById('liveStatusPill');
             const streamStatusText = document.getElementById('streamStatusText');
 
             // Controls Drawer Elements
@@ -671,7 +695,7 @@
             let isWriting = false;
             let totalNamesWritten = 0;
             let currentLineIndex = 0;
-            let maxLinesPerPage = 10;
+            let maxLinesPerPage = 12;
             let charDelayMs = 85;
             let currentFont = "'Caveat', cursive";
             let currentInkColor = "#1a365d";
@@ -711,6 +735,88 @@
                 if (savedVideo) {
                     ytVideoIdInput.value = savedVideo;
                 }
+
+                // Parse URL Query Parameters (?v=VIDEO_ID, &key=, &mode=, &interval=, &title=)
+                handleUrlAutoConnect();
+            }
+
+            /**
+             * Checks URLSearchParams on load:
+             * - ?v= / ?video= / ?id= : YouTube Video ID or URL -> auto-populates, hides drawer, connects live!
+             * - &key= : Optional API key override
+             * - &mode=author or &mode=text
+             * - &interval=5 / 8 / 10 / 15 (seconds)
+             * - &title=Custom+Notebook+Title
+             */
+            function handleUrlAutoConnect() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const urlVideo = params.get('v') || params.get('video') || params.get('id');
+                    const urlKey = params.get('key') || params.get('apikey');
+                    const urlMode = params.get('mode');
+                    const urlInterval = params.get('interval');
+                    const urlTitle = params.get('title');
+
+                    if (urlKey && urlKey.trim() !== '') {
+                        ytApiKeyInput.value = urlKey.trim();
+                        localStorage.setItem('yt_handwriting_apikey', urlKey.trim());
+                    }
+
+                    if (urlMode === 'author' || urlMode === 'text') {
+                        writeModeSelect.value = urlMode;
+                    }
+
+                    if (urlInterval) {
+                        const sec = parseInt(urlInterval, 10);
+                        if (!isNaN(sec) && sec >= 3 && sec <= 60) {
+                            const ms = String(sec * 1000);
+                            // Add option if custom interval isn't in dropdown
+                            if (![...pollingIntervalSelect.options].some(o => o.value === ms)) {
+                                const opt = document.createElement('option');
+                                opt.value = ms;
+                                opt.textContent = `Every ${sec}s (URL)`;
+                                pollingIntervalSelect.appendChild(opt);
+                            }
+                            pollingIntervalSelect.value = ms;
+                        }
+                    }
+
+                    if (urlTitle && urlTitle.trim() !== '') {
+                        headerTitleInput.value = urlTitle.trim();
+                        notebookTitleDisplay.textContent = urlTitle.trim();
+                    }
+
+                    if (urlVideo && urlVideo.trim() !== '') {
+                        ytVideoIdInput.value = urlVideo.trim();
+                        // Automatically hide settings panel so Prism Live Web Widget starts clean
+                        enterCleanLiveMode();
+                        setFooterStatus('CONNECTING TO YT LIVE...', 'waiting');
+                        // Start connection immediately
+                        connectToYouTubeLive();
+                    }
+                } catch (e) {
+                    console.error('URL param parse error:', e);
+                }
+            }
+
+            function enterCleanLiveMode() {
+                controlsDrawer.classList.add('hidden-drawer');
+                toggleControlsBtn.classList.add('clean-live-mode');
+            }
+
+            function openControlsDrawer() {
+                controlsDrawer.classList.remove('hidden-drawer');
+                toggleControlsBtn.classList.remove('clean-live-mode');
+            }
+
+            function setFooterStatus(text, state = 'default') {
+                streamStatusText.textContent = text;
+                liveStatusPill.classList.remove('connected', 'error');
+                if (state === 'connected') {
+                    liveStatusPill.classList.add('connected');
+                } else if (state === 'error') {
+                    liveStatusPill.classList.add('error');
+                }
             }
 
             function setTodayDate() {
@@ -734,11 +840,11 @@
                 }
             }
 
-            // Calculate how many 48px ruled lines fit cleanly between header and footer
+            // Calculate how many 46px ruled lines fit cleanly between header and footer
             function calculateLinesPerPage() {
                 const paperHeight = notebookPaper.clientHeight || 750;
-                const availableHeight = paperHeight - 112 - 48; // minus header & footer
-                maxLinesPerPage = Math.max(5, Math.floor(availableHeight / 48));
+                const availableHeight = paperHeight - 112 - 46; // minus header & footer
+                maxLinesPerPage = Math.max(5, Math.floor(availableHeight / 46));
             }
 
             function renderEmptyLines() {
@@ -932,7 +1038,7 @@
                 });
             }
 
-            // Moves the SVG Pen Nib (bottom-left at x=0, y=150) accurately to each character
+            // Moves the SVG Pen Nib (bottom-left at x=0, y=145) accurately to each character
             function movePenToElement(el, isStart) {
                 const paperRect = notebookPaper.getBoundingClientRect();
                 const elRect = el.getBoundingClientRect();
@@ -941,20 +1047,12 @@
                 const targetY = (elRect.bottom - 6) - paperRect.top;
 
                 writingPen.style.left = `${targetX}px`;
-                writingPen.style.top = `${targetY - 150}px`;
+                writingPen.style.top = `${targetY - 145}px`;
             }
 
             // --- Drawer & UI Event Listeners ---
-            toggleControlsBtn.addEventListener('click', () => {
-                controlsDrawer.classList.remove('hidden-drawer');
-                toggleControlsBtn.classList.remove('clean-live-mode');
-            });
-
-            closeDrawerBtn.addEventListener('click', () => {
-                controlsDrawer.classList.add('hidden-drawer');
-                // Make corner button ultra-subtle so stream looks 100% clean
-                toggleControlsBtn.classList.add('clean-live-mode');
-            });
+            toggleControlsBtn.addEventListener('click', openControlsDrawer);
+            closeDrawerBtn.addEventListener('click', enterCleanLiveMode);
 
             toggleKeyVisibilityBtn.addEventListener('click', () => {
                 if (ytApiKeyInput.type === 'text') {
@@ -1001,7 +1099,7 @@
                     autoDemoInterval = null;
                     autoDemoBtn.textContent = '▶ Start Auto Demo';
                     autoDemoBtn.classList.remove('bg-emerald-600', 'text-white');
-                    if (!ytLiveChatId) streamStatusText.textContent = 'LIVE CHAT READY';
+                    if (!ytLiveChatId) setFooterStatus('LIVE CHAT READY', 'default');
                     showToast('Auto Demo stopped.');
                 } else {
                     const feedSample = () => {
@@ -1013,7 +1111,7 @@
                     autoDemoInterval = setInterval(feedSample, 2400);
                     autoDemoBtn.textContent = '⏹ Stop Demo';
                     autoDemoBtn.classList.add('bg-emerald-600', 'text-white');
-                    streamStatusText.textContent = 'DEMO LIVE ACTIVE';
+                    setFooterStatus('DEMO LIVE ACTIVE', 'connected');
                     showToast('Auto Demo started! Click "Go Live (Hide Panel)" to preview full screen.');
                 }
             });
@@ -1081,12 +1179,16 @@
                 const rawVideo = ytVideoIdInput.value.trim();
 
                 if (!apiKey) {
-                    showToast('Please enter your YouTube Data API v3 Key.', true);
+                    const msg = 'Please enter your YouTube Data API v3 Key.';
+                    showToast(msg, true);
+                    setFooterStatus('MISSING API KEY', 'error');
                     return;
                 }
                 const videoId = extractYouTubeVideoId(rawVideo);
                 if (!videoId) {
-                    showToast('Invalid YouTube Live URL or Video ID. Paste your live stream link.', true);
+                    const msg = 'Invalid YouTube Live Video ID or URL.';
+                    showToast(msg, true);
+                    setFooterStatus('INVALID VIDEO ID', 'error');
                     return;
                 }
 
@@ -1096,6 +1198,7 @@
 
                 ytConnectionBadge.textContent = 'Connecting...';
                 ytConnectionBadge.className = 'text-[11px] bg-amber-600 text-white px-2.5 py-0.5 rounded-full font-semibold';
+                setFooterStatus('CONNECTING...', 'default');
 
                 try {
                     const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoId}&key=${encodeURIComponent(apiKey)}`;
@@ -1106,12 +1209,12 @@
                         throw new Error(`API Error: ${data.error.message}`);
                     }
                     if (!data.items || data.items.length === 0) {
-                        throw new Error('Video not found. Check your Live Video URL or ID.');
+                        throw new Error('Video not found. Check your Video ID.');
                     }
 
                     const liveDetails = data.items[0].liveStreamingDetails;
                     if (!liveDetails || !liveDetails.activeLiveChatId) {
-                        throw new Error('This video does not have an active Live Chat right now. Start your live stream first!');
+                        throw new Error('No active Live Chat found on this video.');
                     }
 
                     ytLiveChatId = liveDetails.activeLiveChatId;
@@ -1120,7 +1223,7 @@
 
                     ytConnectionBadge.textContent = 'Connected - Live ●';
                     ytConnectionBadge.className = 'text-[11px] bg-emerald-600 text-white px-2.5 py-0.5 rounded-full font-bold';
-                    streamStatusText.textContent = 'YT LIVE CONNECTED';
+                    setFooterStatus('YT LIVE CONNECTED', 'connected');
                     connectYtBtn.classList.add('hidden');
                     disconnectYtBtn.classList.remove('hidden');
 
@@ -1129,6 +1232,7 @@
                 } catch (err) {
                     ytConnectionBadge.textContent = 'Error';
                     ytConnectionBadge.className = 'text-[11px] bg-rose-600 text-white px-2.5 py-0.5 rounded-full font-semibold';
+                    setFooterStatus(`ERROR: ${err.message}`, 'error');
                     showToast(err.message, true);
                 }
             }
@@ -1178,6 +1282,7 @@
                     const pollInterval = Math.max(userSelectedInterval, data.pollingIntervalMillis || 4000);
                     ytPollingTimer = setTimeout(() => pollYouTubeMessages(apiKey), pollInterval);
                 } catch (err) {
+                    setFooterStatus(`STOPPED: ${err.message}`, 'error');
                     showToast(`Chat Polling Stopped: ${err.message}`, true);
                     disconnectYouTubeLive();
                 }
@@ -1191,7 +1296,6 @@
                 ytLiveChatId = null;
                 ytConnectionBadge.textContent = 'Disconnected';
                 ytConnectionBadge.className = 'text-[11px] bg-slate-700 text-slate-300 px-2.5 py-0.5 rounded-full font-semibold';
-                streamStatusText.textContent = 'LIVE CHAT READY';
                 connectYtBtn.classList.remove('hidden');
                 disconnectYtBtn.classList.add('hidden');
             }
@@ -1199,6 +1303,7 @@
             connectYtBtn.addEventListener('click', connectToYouTubeLive);
             disconnectYtBtn.addEventListener('click', () => {
                 disconnectYouTubeLive();
+                setFooterStatus('LIVE CHAT READY', 'default');
                 showToast('Disconnected from YouTube Live Chat.');
             });
 
