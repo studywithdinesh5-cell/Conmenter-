@@ -1,774 +1,1270 @@
 <!DOCTYPE html>
 <html lang="ta">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Live Handwriting Notebook</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Indie+Flower&family=Kalam:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>1v1 Automated Dice Battle - Live Stream Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Base Styling & Arcade Typography */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #1b1140 0%, #070410 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #f4efe6;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+        .font-arcade {
+            font-family: 'Black Ops One', cursive, sans-serif;
+            letter-spacing: 0.05em;
+        }
 
-    /* Realistic Notebook Paper Background */
-    #notebook-container {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      background-color: #fcfaf2;
-      background-image: 
-        linear-gradient(90deg, transparent 54px, #f28b82 54px, #f28b82 56px, transparent 56px),
-        linear-gradient(#d2e3fc 1px, transparent 1px);
-      background-size: 100% 100%, 100% 48px;
-      background-position: 0 0, 0 88px;
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.06);
-      display: flex;
-      flex-direction: column;
-    }
+        /* Card Glow & Active Turn Animations */
+        .glow-blue {
+            box-shadow: 0 0 22px rgba(59, 130, 246, 0.5), inset 0 0 12px rgba(59, 130, 246, 0.25);
+            border-color: #3b82f6;
+        }
+        .glow-red {
+            box-shadow: 0 0 22px rgba(239, 68, 68, 0.5), inset 0 0 12px rgba(239, 68, 68, 0.25);
+            border-color: #ef4444;
+        }
+        .active-turn-blue {
+            transform: scale(1.015);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.95), inset 0 0 22px rgba(59, 130, 246, 0.45);
+            border-color: #60a5fa;
+        }
+        .active-turn-red {
+            transform: scale(1.015);
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.95), inset 0 0 22px rgba(239, 68, 68, 0.45);
+            border-color: #f87171;
+        }
 
-    /* Top Header on Notebook */
-    #notebook-header {
-      height: 88px;
-      padding: 18px 20px 10px 70px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid #f28b82;
-    }
+        /* Top CTA Banner Pulse */
+        @keyframes ctaPulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 26px rgba(245, 158, 11, 0.9);
+                transform: scale(1.012);
+            }
+        }
+        .cta-banner-glow {
+            animation: ctaPulseGlow 2s ease-in-out infinite;
+        }
 
-    #notebook-title {
-      font-family: 'Kalam', cursive;
-      font-size: 22px;
-      font-weight: 700;
-      color: #1a237e;
-      letter-spacing: 0.5px;
-    }
+        /* True 3D Rolling Dice Cube */
+        .dice-stage {
+            width: 96px;
+            height: 96px;
+            perspective: 750px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    #live-badge {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      background: rgba(22, 163, 74, 0.12);
-      border: 1.5px solid #16a34a;
-      color: #15803d;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+        .dice-shadow {
+            position: absolute;
+            bottom: -10px;
+            width: 72px;
+            height: 15px;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 75%);
+            border-radius: 50%;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
 
-    #live-dot {
-      width: 8px;
-      height: 8px;
-      background: #16a34a;
-      border-radius: 50%;
-      animation: pulse 1.2s infinite;
-    }
+        .dice-shadow.bouncing {
+            animation: shadowPulse 0.75s ease-in-out infinite;
+        }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
+        @keyframes shadowPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(0.45); opacity: 0.25; }
+        }
 
-    /* Canvas Layer for Handwriting & Pen */
-    #canvas-wrapper {
-      position: relative;
-      flex: 1;
-      width: 100%;
-      overflow: hidden;
-    }
+        .dice-cube {
+            width: 84px;
+            height: 84px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+        }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
+        .dice-face {
+            position: absolute;
+            width: 84px;
+            height: 84px;
+            border-radius: 16px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 12px;
+            gap: 4px;
+            backface-visibility: hidden;
+            box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.4), inset 0 -4px 10px rgba(0, 0, 0, 0.35);
+            border: 2.5px solid rgba(255, 255, 255, 0.85);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
 
-    /* Animated Fountain/Ballpoint Pen */
-    #pen {
-      position: absolute;
-      width: 110px;
-      height: 110px;
-      pointer-events: none;
-      transform-origin: 6px 104px;
-      transform: translate(-200px, -200px) rotate(-12deg);
-      transition: opacity 0.25s ease;
-      z-index: 20;
-      filter: drop-shadow(4px 8px 6px rgba(0,0,0,0.28));
-    }
+        /* Dice Color Themes */
+        .dice-cube.theme-neutral .dice-face {
+            background: linear-gradient(145deg, #f8fafc, #cbd5e1);
+            border-color: #ffffff;
+        }
+        .dice-cube.theme-neutral .pip {
+            background-color: #0f172a;
+            box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
+        }
 
-    /* Subtle Counter Footer */
-    #footer-bar {
-      position: absolute;
-      bottom: 10px;
-      right: 16px;
-      font-family: 'Kalam', cursive;
-      font-size: 15px;
-      color: rgba(26, 35, 126, 0.55);
-      pointer-events: none;
-      z-index: 10;
-    }
+        .dice-cube.theme-p1 .dice-face {
+            background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+            border-color: #93c5fd;
+        }
+        .dice-cube.theme-p1 .pip {
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
 
-    /* Subtle Toggle Button for Settings */
-    #open-settings-btn {
-      position: absolute;
-      bottom: 10px;
-      left: 12px;
-      background: rgba(0, 0, 0, 0.08);
-      border: none;
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.45);
-      cursor: pointer;
-      z-index: 30;
-    }
+        .dice-cube.theme-p2 .dice-face {
+            background: linear-gradient(145deg, #ef4444, #b91c1c);
+            border-color: #fca5a5;
+        }
+        .dice-cube.theme-p2 .pip {
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
 
-    /* Control Panel Overlay */
-    #settings-panel {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.94);
-      color: #f8fafc;
-      z-index: 100;
-      overflow-y: auto;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+        /* 6 Cube Faces Positioned in 3D Space (half-size = 42px) */
+        .face-1 { transform: rotateY(0deg) translateZ(42px); }
+        .face-6 { transform: rotateY(180deg) translateZ(42px); }
+        .face-2 { transform: rotateY(90deg) translateZ(42px); }
+        .face-5 { transform: rotateY(-90deg) translateZ(42px); }
+        .face-3 { transform: rotateX(90deg) translateZ(42px); }
+        .face-4 { transform: rotateX(-90deg) translateZ(42px); }
 
-    #settings-panel.hidden {
-      display: none;
-    }
+        .pip {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin: auto;
+        }
 
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 12px;
-    }
+        @keyframes realisticRoll3D {
+            0% { transform: translateY(0px) scale(1) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            25% { transform: translateY(-28px) scale(1.2) rotateX(210deg) rotateY(140deg) rotateZ(70deg); }
+            50% { transform: translateY(-36px) scale(1.26) rotateX(410deg) rotateY(300deg) rotateZ(160deg); }
+            75% { transform: translateY(-14px) scale(1.12) rotateX(580deg) rotateY(450deg) rotateZ(260deg); }
+            100% { transform: translateY(0px) scale(1) rotateX(720deg) rotateY(540deg) rotateZ(360deg); }
+        }
 
-    .panel-header h2 {
-      font-size: 18px;
-      color: #38bdf8;
-    }
+        .dice-cube.rolling-3d {
+            animation: realisticRoll3D 0.75s cubic-bezier(0.35, 0.05, 0.55, 0.95) infinite;
+        }
 
-    .btn-go-live {
-      background: #16a34a;
-      color: #fff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-    }
+        /* Floating +1 Point Animation */
+        @keyframes popPoint {
+            0% { transform: translateY(0) scale(0.75); opacity: 1; }
+            100% { transform: translateY(-38px) scale(1.35); opacity: 0; }
+        }
 
-    .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+        .floating-point {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.65rem;
+            pointer-events: none;
+            animation: popPoint 0.7s ease-out forwards;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+            z-index: 30;
+        }
 
-    .card-title {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #94a3b8;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    label {
-      font-size: 12px;
-      color: #cbd5e1;
-      margin-bottom: 4px;
-      display: block;
-    }
-
-    input[type="text"], input[type="password"], select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #475569;
-      background: #0f172a;
-      color: #f8fafc;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .row > * {
-      flex: 1;
-    }
-
-    .btn-primary {
-      background: #dc2626;
-      color: #fff;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 15px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    .btn-secondary {
-      background: #334155;
-      color: #f8fafc;
-      border: none;
-      padding: 10px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    .status-box {
-      font-size: 13px;
-      padding: 10px;
-      border-radius: 8px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #e2e8f0;
-    }
-
-    .status-ok { border-color: #16a34a; color: #4ade80; }
-    .status-err { border-color: #dc2626; color: #f87171; }
-
-    .color-dots {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .color-dot {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer;
-    }
-
-    .color-dot.active {
-      border-color: #fff;
-      transform: scale(1.12);
-    }
-  </style>
+        #confettiCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 45;
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
 
-  <!-- Main Notebook View -->
-  <div id="notebook-container">
-    <div id="notebook-header">
-      <div id="notebook-title">SUBSCRIBERS NOTEBOOK ❤️</div>
-      <div id="live-badge">
-        <span id="live-dot"></span>
-        <span>YT LIVE CONNECTED</span>
-      </div>
+    <!-- Confetti Overlay -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Main 9:16 Vertical Live Stream Container -->
+    <div class="relative w-full max-w-[460px] h-[96vh] sm:h-[860px] bg-slate-950/95 border-2 border-purple-500/40 rounded-3xl shadow-2xl flex flex-col justify-between p-2 sm:p-3 overflow-hidden">
+        
+        <!-- 1. TOP CALL-TO-ACTION BANNER -->
+        <div class="w-full z-20 mb-1.5 shrink-0">
+            <div class="cta-banner-glow w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 border-2 border-amber-200 rounded-2xl py-1.5 px-3 text-center shadow-lg">
+                <div class="font-arcade text-sm sm:text-base text-white tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]">
+                    COMMENT YOUR FAVORITE TEAM 👇💬
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. HEADER BAR: ROUND, TARGET, SOUND & SETTINGS -->
+        <div class="flex items-center justify-between z-20 mb-1 shrink-0 px-0.5">
+            <div class="flex items-center gap-1.5 bg-slate-900/95 border border-slate-700/80 px-2.5 py-1 rounded-full shadow-md">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                <span id="roundBadge" class="font-arcade text-xs sm:text-sm text-amber-400 tracking-wider">ROUND 1</span>
+            </div>
+
+            <div class="text-center">
+                <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-purple-200 bg-purple-950/90 border border-purple-500/40 px-2.5 py-1 rounded-full">
+                    FIRST TO <span class="text-amber-300 font-black">100</span> WINS
+                </span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <button id="quickSoundBtn" title="Toggle Sound" class="p-1.5 bg-slate-800/95 hover:bg-slate-700 text-emerald-300 rounded-full border border-slate-600/80 text-xs transition active:scale-95">
+                    🔊
+                </button>
+                <button id="openSettingsBtn" title="Setup Photos & Names" class="flex items-center gap-1 px-2.5 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-full border border-purple-400/80 transition active:scale-95 text-xs font-extrabold shadow">
+                    <span>⚙️</span>
+                    <span>Edit</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Pill -->
+        <div class="mb-1.5 text-center z-20 shrink-0">
+            <div id="statusBanner" class="inline-block bg-indigo-950/90 border border-purple-400/40 px-3 py-0.5 rounded-full text-[11px] font-bold text-purple-100 shadow-md">
+                TAP PHOTO OR EDIT TO CHANGE • PRESS START!
+            </div>
+        </div>
+
+        <!-- 3. MAIN 1v1 ARENA (EXTRA-LARGE PORTRAIT PHOTO CARDS + VS + SINGLE 3D DICE) -->
+        <div class="relative flex-1 flex flex-col justify-between gap-2 min-h-0 z-10">
+            
+            <!-- Two Tall Side-by-Side Fighter Cards (~60% Viewport Height) -->
+            <div class="relative flex-1 grid grid-cols-2 gap-1.5 min-h-[52vh]">
+                
+                <!-- Center Overlapping VS Badge -->
+                <div class="absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-red-600 border-2 border-white shadow-[0_0_28px_rgba(245,158,11,0.98)] flex items-center justify-center">
+                        <span class="font-arcade text-lg sm:text-xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">VS</span>
+                    </div>
+                </div>
+
+                <!-- PLAYER 1 CARD (LEFT - BLUE) -->
+                <div id="cardP1" data-player="1" class="fighter-dropzone relative w-full h-full rounded-3xl overflow-hidden border-2 glow-blue bg-slate-900 transition-all duration-300 cursor-pointer group">
+                    <img id="imgP1" src="" alt="Player 1" class="absolute inset-0 w-full h-full object-cover object-top">
+                    
+                    <!-- Gradient Overlays for Legibility -->
+                    <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-slate-950/85 via-slate-950/35 to-transparent pointer-events-none"></div>
+                    <div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent pointer-events-none"></div>
+
+                    <div class="relative z-10 w-full h-full flex flex-col justify-between p-2.5">
+                        <!-- Top Row -->
+                        <div class="w-full flex justify-between items-center">
+                            <span class="text-[10px] font-black uppercase bg-blue-600/90 text-white border border-blue-300/60 px-2 py-0.5 rounded-lg shadow">TEAM 1</span>
+                            <span id="turnBadgeP1" class="hidden text-[9px] font-black uppercase bg-blue-500 text-white px-2 py-0.5 rounded-full animate-pulse shadow">TURN</span>
+                            <span class="text-xs font-extrabold text-amber-300 bg-slate-950/80 px-2 py-0.5 rounded-lg border border-amber-400/30">
+                                🏆 <span id="winsP1">0</span>
+                            </span>
+                        </div>
+
+                        <!-- Center Tap-to-Change Pill -->
+                        <div id="photoHintP1" class="mx-auto my-auto bg-slate-950/75 group-hover:bg-blue-600/90 backdrop-blur-sm border border-white/40 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 transition">
+                            <span>📷</span>
+                            <span>CHANGE PHOTO</span>
+                        </div>
+
+                        <!-- Bottom Name, Score & Progress Bar -->
+                        <div class="w-full flex flex-col items-center">
+                            <h2 id="nameP1" class="text-base sm:text-lg font-black text-center text-white truncate w-full px-1 tracking-wide uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                                VIJAY
+                            </h2>
+
+                            <div class="my-0.5 text-center relative w-full" id="scoreWrapperP1">
+                                <div id="scoreP1" class="font-arcade text-4xl sm:text-5xl text-white leading-none drop-shadow-[0_2px_14px_rgba(59,130,246,1)]">
+                                    0
+                                </div>
+                                <div class="text-[9px] uppercase tracking-widest text-blue-300 font-extrabold">POINTS / 100</div>
+                            </div>
+
+                            <div class="w-full bg-slate-800/90 h-3 rounded-full overflow-hidden border border-blue-400/50 p-0.5 mt-1">
+                                <div id="barP1" class="h-full bg-gradient-to-r from-blue-500 to-cyan-300 rounded-full transition-all duration-150" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PLAYER 2 CARD (RIGHT - RED) -->
+                <div id="cardP2" data-player="2" class="fighter-dropzone relative w-full h-full rounded-3xl overflow-hidden border-2 glow-red bg-slate-900 transition-all duration-300 cursor-pointer group">
+                    <img id="imgP2" src="" alt="Player 2" class="absolute inset-0 w-full h-full object-cover object-top">
+                    
+                    <!-- Gradient Overlays for Legibility -->
+                    <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-slate-950/85 via-slate-950/35 to-transparent pointer-events-none"></div>
+                    <div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent pointer-events-none"></div>
+
+                    <div class="relative z-10 w-full h-full flex flex-col justify-between p-2.5">
+                        <!-- Top Row -->
+                        <div class="w-full flex justify-between items-center">
+                            <span class="text-xs font-extrabold text-amber-300 bg-slate-950/80 px-2 py-0.5 rounded-lg border border-amber-400/30">
+                                🏆 <span id="winsP2">0</span>
+                            </span>
+                            <span id="turnBadgeP2" class="hidden text-[9px] font-black uppercase bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse shadow">TURN</span>
+                            <span class="text-[10px] font-black uppercase bg-red-600/90 text-white border border-red-300/60 px-2 py-0.5 rounded-lg shadow">TEAM 2</span>
+                        </div>
+
+                        <!-- Center Tap-to-Change Pill -->
+                        <div id="photoHintP2" class="mx-auto my-auto bg-slate-950/75 group-hover:bg-red-600/90 backdrop-blur-sm border border-white/40 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 transition">
+                            <span>📷</span>
+                            <span>CHANGE PHOTO</span>
+                        </div>
+
+                        <!-- Bottom Name, Score & Progress Bar -->
+                        <div class="w-full flex flex-col items-center">
+                            <h2 id="nameP2" class="text-base sm:text-lg font-black text-center text-white truncate w-full px-1 tracking-wide uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                                AJITH
+                            </h2>
+
+                            <div class="my-0.5 text-center relative w-full" id="scoreWrapperP2">
+                                <div id="scoreP2" class="font-arcade text-4xl sm:text-5xl text-white leading-none drop-shadow-[0_2px_14px_rgba(239,68,68,1)]">
+                                    0
+                                </div>
+                                <div class="text-[9px] uppercase tracking-widest text-red-300 font-extrabold">POINTS / 100</div>
+                            </div>
+
+                            <div class="w-full bg-slate-800/90 h-3 rounded-full overflow-hidden border border-red-400/50 p-0.5 mt-1">
+                                <div id="barP2" class="h-full bg-gradient-to-r from-red-500 to-amber-400 rounded-full transition-all duration-150" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. CENTER SINGLE SHARED 3D DICE ARENA -->
+            <div class="relative shrink-0 bg-slate-900/95 border-2 border-purple-500/40 rounded-3xl py-2.5 px-3.5 flex flex-col items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.25)]">
+                
+                <!-- Turn Arrow Indicator Row -->
+                <div class="w-full flex items-center justify-between px-1 mb-1">
+                    <div id="leftTurnArrow" class="flex items-center gap-1 text-xs font-black text-slate-600 transition-all duration-300 max-w-[32%] truncate">
+                        <span>◀</span>
+                        <span id="labelTurnP1" class="truncate">VIJAY</span>
+                    </div>
+
+                    <div id="diceTurnHeader" class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap">
+                        READY TO ROLL
+                    </div>
+
+                    <div id="rightTurnArrow" class="flex items-center justify-end gap-1 text-xs font-black text-slate-600 transition-all duration-300 max-w-[32%] truncate">
+                        <span id="labelTurnP2" class="truncate">AJITH</span>
+                        <span>▶</span>
+                    </div>
+                </div>
+
+                <!-- 3D Cube Stage -->
+                <div class="dice-stage">
+                    <div id="diceShadow" class="dice-shadow"></div>
+                    <div id="sharedDiceCube" class="dice-cube theme-neutral">
+                        <div class="dice-face face-1">
+                            <div></div><div></div><div></div>
+                            <div></div><div class="pip"></div><div></div>
+                            <div></div><div></div><div></div>
+                        </div>
+                        <div class="dice-face face-2">
+                            <div class="pip"></div><div></div><div></div>
+                            <div></div><div></div><div></div>
+                            <div></div><div></div><div class="pip"></div>
+                        </div>
+                        <div class="dice-face face-3">
+                            <div class="pip"></div><div></div><div></div>
+                            <div></div><div class="pip"></div><div></div>
+                            <div></div><div></div><div class="pip"></div>
+                        </div>
+                        <div class="dice-face face-4">
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                            <div></div><div></div><div></div>
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                        </div>
+                        <div class="dice-face face-5">
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                            <div></div><div class="pip"></div><div></div>
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                        </div>
+                        <div class="dice-face face-6">
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                            <div class="pip"></div><div></div><div class="pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rolled Number Output -->
+                <div id="rolledNumberBadge" class="mt-1.5 text-xs font-extrabold text-amber-300 tracking-wider h-4">
+                    &nbsp;
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. ONE-CLICK START / LIVE CONTROLS -->
+        <div class="mt-2 z-20 flex flex-col items-center shrink-0">
+            <button id="startBattleBtn" class="w-full py-3 px-6 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-arcade text-lg sm:text-xl rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.65)] border-2 border-emerald-200 transition transform active:scale-95 flex items-center justify-center gap-2">
+                <span>▶ START BATTLE</span>
+            </button>
+
+            <div id="autoRunningIndicator" class="hidden w-full flex items-center justify-between bg-slate-900/95 border border-emerald-500/40 rounded-2xl px-3.5 py-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Auto-Battle Live</span>
+                </div>
+                <button id="pauseResumeBtn" class="px-3.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 rounded-lg text-xs font-bold">
+                    Pause
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. WINNER OVERLAY & 20-SECOND AUTO-RESTART COUNTDOWN -->
+        <div id="winnerOverlay" class="hidden absolute inset-0 z-40 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+            <div class="text-amber-400 font-arcade text-2xl sm:text-3xl tracking-widest mb-2 animate-bounce">
+                👑 WINNER! 👑
+            </div>
+
+            <div class="w-40 h-40 sm:w-44 sm:h-44 rounded-3xl overflow-hidden border-4 border-amber-400 shadow-[0_0_40px_rgba(251,191,36,0.85)] my-3">
+                <img id="winnerImg" src="" alt="Winner" class="w-full h-full object-cover object-top">
+            </div>
+
+            <h2 id="winnerName" class="font-arcade text-3xl sm:text-4xl text-white mt-2 drop-shadow-lg">
+                VIJAY
+            </h2>
+            <p class="text-emerald-400 font-bold text-sm sm:text-base mt-1">
+                Reached <span id="winnerFinalScore">100</span> Points!
+            </p>
+
+            <!-- 20-Second Auto Restart Countdown -->
+            <div class="mt-6 w-full bg-slate-900/95 border-2 border-purple-500/50 rounded-2xl p-4 shadow-xl">
+                <div class="text-xs uppercase tracking-widest text-purple-300 font-bold">
+                    NEXT ROUND STARTS IN
+                </div>
+                <div id="countdownTimer" class="font-arcade text-5xl text-amber-400 my-1">
+                    20s
+                </div>
+                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mt-2">
+                    <div id="countdownBar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-1000 linear" style="width: 100%;"></div>
+                </div>
+                <div id="nextRoundLabel" class="text-xs text-slate-400 mt-2 font-semibold">
+                    Preparing Round 2...
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="canvas-wrapper">
-      <canvas id="writing-canvas"></canvas>
+    <!-- 7. MULTI-METHOD PHOTO & BATTLE SETUP MODAL (100% Iframe-Safe) -->
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md p-4 sm:p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                <h3 class="font-arcade text-lg sm:text-xl text-white">SETUP PHOTOS & TEAMS</h3>
+                <button id="closeSettingsBtn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-300 text-sm font-bold">
+                    ✕
+                </button>
+            </div>
 
-      <!-- Realistic Blue/Gold Pen SVG -->
-      <svg id="pen" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Nib -->
-        <path d="M6 114 L22 92 L28 98 Z" fill="#cbd5e1" stroke="#475569" stroke-width="1.5"/>
-        <path d="M6 114 L15 102" stroke="#1e293b" stroke-width="1.5"/>
-        <!-- Grip -->
-        <path d="M22 92 L36 78 L42 84 L28 98 Z" fill="#1e293b"/>
-        <!-- Gold Ring -->
-        <path d="M36 78 L40 74 L46 80 L42 84 Z" fill="#f59e0b"/>
-        <!-- Pen Body -->
-        <path d="M40 74 L98 16 C102 12 108 18 104 22 L46 80 Z" fill="#1d4ed8"/>
-        <!-- Highlight -->
-        <path d="M44 72 L96 20" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Clip -->
-        <path d="M74 34 L94 14 L98 18 L78 38 Z" fill="#f59e0b"/>
-      </svg>
+            <!-- Feedback Toast inside Modal -->
+            <div id="modalFeedback" class="hidden mb-3 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-center">
+                Photo Updated!
+            </div>
+
+            <div class="space-y-4">
+                <!-- PLAYER 1 SETUP -->
+                <div id="dropzoneModalP1" data-player="1" class="modal-dropzone bg-blue-950/35 border border-blue-500/40 p-3.5 rounded-2xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-black text-blue-400 uppercase">Left Fighter (Team 1)</span>
+                        <span class="text-[10px] text-slate-400">Drop image or Ctrl+V</span>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <img id="previewP1" src="" class="w-16 h-20 rounded-xl object-cover object-top border-2 border-blue-400 bg-slate-800 shrink-0">
+                        <div class="flex-1 space-y-2 min-w-0">
+                            <input type="text" id="inputNameP1" value="VIJAY" maxlength="16" placeholder="Team / Player Name" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-blue-500">
+                            
+                            <!-- Method 1 & 2: File Upload Button + Paste Image Button -->
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="relative overflow-hidden cursor-pointer bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center gap-1">
+                                    <span>📷 Upload Photo</span>
+                                    <input type="file" id="fileP1" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                                </label>
+                                <button type="button" id="pasteBtnP1" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition">
+                                    📋 Paste Image
+                                </button>
+                            </div>
+
+                            <!-- Method 3: Instant Image URL Input + Apply -->
+                            <div class="flex gap-1">
+                                <input type="url" id="urlInputP1" placeholder="Paste image link (https://...)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-blue-400">
+                                <button type="button" id="applyUrlBtnP1" class="bg-blue-500 hover:bg-blue-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-lg">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method 4: One-Click Instant Sample Avatars -->
+                    <div class="mt-2.5 pt-2 border-t border-blue-500/20">
+                        <div class="text-[10px] font-bold text-slate-400 mb-1.5">Quick Presets (1-Click):</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="applyPreset(1, 'VIJAY', 'vijay')" class="px-2 py-1 bg-slate-800 hover:bg-blue-600 text-[11px] font-bold rounded-lg border border-slate-700">Vijay</button>
+                            <button type="button" onclick="applyPreset(1, 'CSK', 'csk')" class="px-2 py-1 bg-slate-800 hover:bg-amber-600 text-[11px] font-bold rounded-lg border border-slate-700">CSK</button>
+                            <button type="button" onclick="applyPreset(1, 'INDIA', 'india')" class="px-2 py-1 bg-slate-800 hover:bg-blue-600 text-[11px] font-bold rounded-lg border border-slate-700">India</button>
+                            <button type="button" onclick="applyPreset(1, 'RONALDO', 'cr7')" class="px-2 py-1 bg-slate-800 hover:bg-blue-600 text-[11px] font-bold rounded-lg border border-slate-700">CR7</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PLAYER 2 SETUP -->
+                <div id="dropzoneModalP2" data-player="2" class="modal-dropzone bg-red-950/35 border border-red-500/40 p-3.5 rounded-2xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-black text-red-400 uppercase">Right Fighter (Team 2)</span>
+                        <span class="text-[10px] text-slate-400">Drop image or Ctrl+V</span>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <img id="previewP2" src="" class="w-16 h-20 rounded-xl object-cover object-top border-2 border-red-400 bg-slate-800 shrink-0">
+                        <div class="flex-1 space-y-2 min-w-0">
+                            <input type="text" id="inputNameP2" value="AJITH" maxlength="16" placeholder="Team / Player Name" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-red-500">
+                            
+                            <!-- Method 1 & 2: File Upload Button + Paste Image Button -->
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="relative overflow-hidden cursor-pointer bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center gap-1">
+                                    <span>📷 Upload Photo</span>
+                                    <input type="file" id="fileP2" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                                </label>
+                                <button type="button" id="pasteBtnP2" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition">
+                                    📋 Paste Image
+                                </button>
+                            </div>
+
+                            <!-- Method 3: Instant Image URL Input + Apply -->
+                            <div class="flex gap-1">
+                                <input type="url" id="urlInputP2" placeholder="Paste image link (https://...)" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-red-400">
+                                <button type="button" id="applyUrlBtnP2" class="bg-red-500 hover:bg-red-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-lg">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method 4: One-Click Instant Sample Avatars -->
+                    <div class="mt-2.5 pt-2 border-t border-red-500/20">
+                        <div class="text-[10px] font-bold text-slate-400 mb-1.5">Quick Presets (1-Click):</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="applyPreset(2, 'AJITH', 'ajith')" class="px-2 py-1 bg-slate-800 hover:bg-red-600 text-[11px] font-bold rounded-lg border border-slate-700">Ajith</button>
+                            <button type="button" onclick="applyPreset(2, 'RCB', 'rcb')" class="px-2 py-1 bg-slate-800 hover:bg-red-600 text-[11px] font-bold rounded-lg border border-slate-700">RCB</button>
+                            <button type="button" onclick="applyPreset(2, 'AUSTRALIA', 'aus')" class="px-2 py-1 bg-slate-800 hover:bg-amber-600 text-[11px] font-bold rounded-lg border border-slate-700">Australia</button>
+                            <button type="button" onclick="applyPreset(2, 'MESSI', 'messi')" class="px-2 py-1 bg-slate-800 hover:bg-blue-600 text-[11px] font-bold rounded-lg border border-slate-700">Messi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speed & Sound Settings -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="bg-slate-800/80 p-2.5 rounded-2xl border border-slate-700">
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1">Roll Speed</label>
+                        <select id="speedSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-white">
+                            <option value="normal" selected>Normal (Live)</option>
+                            <option value="fast">Fast (Turbo)</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-800/80 p-2.5 rounded-2xl border border-slate-700">
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1">Sound Effects</label>
+                        <button type="button" id="toggleSoundBtn" class="w-full bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold">
+                            🔊 Sound ON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div class="pt-1 flex gap-2">
+                    <button type="button" id="resetMatchBtn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-rose-400 font-bold text-xs sm:text-sm rounded-xl border border-slate-700">
+                        Reset All Scores
+                    </button>
+                    <button type="button" id="saveSettingsBtn" class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg">
+                        ✓ Save & Close
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="footer-bar">Names Written: <span id="written-count">0</span></div>
-    <button id="open-settings-btn" onclick="toggleSettings(true)">⚙ Controls</button>
-  </div>
+    <script>
+        /**
+         * 1v1 AUTOMATED DICE BATTLE ENGINE
+         * Clean, self-contained, 100% crash-free architecture.
+         */
 
-  <!-- Settings Panel -->
-  <div id="settings-panel">
-    <div class="panel-header">
-      <div>
-        <h2>✍️ Live Stream Settings</h2>
-        <div style="font-size: 11px; color: #94a3b8;">Auto-Connects when ?v=VIDEO_ID is in URL</div>
-      </div>
-      <button class="btn-go-live" onclick="toggleSettings(false)">✓ Go Live (Hide Panel)</button>
-    </div>
-
-    <div id="status-message" class="status-box">Ready. Add ?v=VIDEO_ID to URL for Prism Live auto-connect.</div>
-
-    <!-- YouTube API Section -->
-    <div class="card">
-      <div class="card-title">
-        <span>1. YouTube Live Chat Connect</span>
-        <span id="conn-pill" style="color:#94a3b8;">Idle</span>
-      </div>
-
-      <div>
-        <label>YouTube Data API v3 Key</label>
-        <input type="text" id="api-key-input" value="AIzaSyCn5gyMHsRiulXxeoPKi2TeIQVZyNhqwPA" />
-      </div>
-
-      <div>
-        <label>YouTube Live Video URL or Video ID</label>
-        <input type="text" id="video-url-input" placeholder="https://youtube.com/live/xxxxx or Video ID" />
-      </div>
-
-      <div class="row">
-        <div>
-          <label>What to Write?</label>
-          <select id="write-mode">
-            <option value="comment" selected>Write Comment Text</option>
-            <option value="author">Write Commenter Name</option>
-          </select>
-        </div>
-        <div>
-          <label>Check Speed (Quota Saver)</label>
-          <select id="poll-interval">
-            <option value="6000">Every 6s (~3.3 hrs free)</option>
-            <option value="8000" selected>Every 8s (~4.5 hrs free)</option>
-            <option value="12000">Every 12s (~6.5 hrs free)</option>
-          </select>
-        </div>
-      </div>
-
-      <button class="btn-primary" id="connect-btn" onclick="startYouTubeConnection()">🔴 Connect YouTube Live</button>
-    </div>
-
-    <!-- Manual Test Section -->
-    <div class="card">
-      <div class="card-title">
-        <span>2. Test / Demo Mode</span>
-        <button class="btn-secondary" id="demo-btn" onclick="toggleDemo()">▶ Start Auto Demo</button>
-      </div>
-      <div class="row">
-        <input type="text" id="manual-name" placeholder="Type name (e.g. Sriram)" />
-        <button class="btn-secondary" style="flex:0 0 110px; background:#2563eb;" onclick="addManualName()">Write Name</button>
-      </div>
-    </div>
-
-    <!-- Customization -->
-    <div class="card">
-      <div class="card-title"><span>3. Notebook & Pen Style</span></div>
-      <div>
-        <label>Notebook Top Title</label>
-        <input type="text" id="title-input" value="SUBSCRIBERS NOTEBOOK ❤️" oninput="updateTitle(this.value)" />
-      </div>
-
-      <div class="row">
-        <div>
-          <label>Pen Ink Color</label>
-          <div class="color-dots">
-            <div class="color-dot active" style="background:#1a237e;" onclick="setInkColor('#1a237e', this)"></div>
-            <div class="color-dot" style="background:#0f172a;" onclick="setInkColor('#0f172a', this)"></div>
-            <div class="color-dot" style="background:#b91c1c;" onclick="setInkColor('#b91c1c', this)"></div>
-            <div class="color-dot" style="background:#15803d;" onclick="setInkColor('#15803d', this)"></div>
-          </div>
-        </div>
-        <div>
-          <label>Handwriting Font</label>
-          <select id="font-select" onchange="currentFont = this.value">
-            <option value="Caveat">Caveat (Natural Cursive)</option>
-            <option value="Kalam">Kalam (Bold Marker)</option>
-            <option value="Indie Flower">Indie Flower (Neat)</option>
-            <option value="Patrick Hand">Patrick Hand (Clean)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row" style="align-items:center;">
-        <div>
-          <label>Writing Speed</label>
-          <input type="range" id="speed-slider" min="2" max="10" value="5" />
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; padding-top:16px;">
-          <input type="checkbox" id="sound-toggle" checked style="width:18px; height:18px;" />
-          <label style="margin:0;">Pen Sound</label>
-        </div>
-      </div>
-
-      <div class="row">
-        <button class="btn-secondary" onclick="clearNotebook()">🧹 Clear Page</button>
-        <button class="btn-secondary" onclick="resetCounter()">Reset Count</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Pre-configured working API key
-    const DEFAULT_API_KEY = "AIzaSyCn5gyMHsRiulXxeoPKi2TeIQVZyNhqwPA";
-
-    const canvas = document.getElementById('writing-canvas');
-    const ctx = canvas.getContext('2d');
-    const pen = document.getElementById('pen');
-
-    let inkColor = '#1a237e';
-    let currentFont = 'Caveat';
-    let currentLine = 0;
-    let totalWritten = 0;
-    let queue = [];
-    let isWriting = false;
-
-    // YouTube Live polling state
-    let isPolling = false;
-    let pollTimer = null;
-    let liveChatId = null;
-    let nextPageToken = null;
-    let seenMessageIds = new Set();
-
-    // Demo state
-    let demoInterval = null;
-    const sampleNames = ["Sriram", "Dinesh", "Priya", "Karthik", "Anitha", "Vijay", "Divya", "Arun", "Kavya", "Manoj"];
-
-    // Web Audio API for subtle pen scratch sound
-    let audioCtx = null;
-    function playScratchSound() {
-      if (!document.getElementById('sound-toggle').checked) return;
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const bufferSize = audioCtx.sampleRate * 0.04;
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.04;
-        }
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = buffer;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 1800;
-
-        noise.connect(filter);
-        filter.connect(audioCtx.destination);
-        noise.start();
-      } catch (e) {}
-    }
-
-    function resizeCanvas() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
-
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-      ctx.drawImage(tempCanvas, 0, 0, rect.width, rect.height);
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function toggleSettings(show) {
-      const panel = document.getElementById('settings-panel');
-      if (show) panel.classList.remove('hidden');
-      else panel.classList.add('hidden');
-    }
-
-    function updateTitle(val) {
-      document.getElementById('notebook-title').textContent = val || "SUBSCRIBERS NOTEBOOK ❤️";
-    }
-
-    function setInkColor(color, el) {
-      inkColor = color;
-      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-      el.classList.add('active');
-    }
-
-    function clearNotebook() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      currentLine = 0;
-    }
-
-    function resetCounter() {
-      totalWritten = 0;
-      document.getElementById('written-count').textContent = '0';
-    }
-
-    function setStatus(msg, type = '') {
-      const box = document.getElementById('status-message');
-      box.textContent = msg;
-      box.className = 'status-box ' + (type === 'ok' ? 'status-ok' : type === 'err' ? 'status-err' : '');
-    }
-
-    function extractVideoId(input) {
-      if (!input) return null;
-      input = input.trim();
-      if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
-      const patterns = [
-        /(?:v=|\/live\/|youtu\.be\/|\/embed\/)([a-zA-Z0-9_-]{11})/
-      ];
-      for (const p of patterns) {
-        const m = input.match(p);
-        if (m) return m[1];
-      }
-      return null;
-    }
-
-    function enqueueText(text) {
-      const clean = text.replace(/[\r\n]+/g, ' ').trim();
-      if (!clean) return;
-      const clipped = clean.length > 26 ? clean.slice(0, 26) + '..' : clean;
-      queue.push(clipped);
-      processQueue();
-    }
-
-    async function processQueue() {
-      if (isWriting || queue.length === 0) return;
-      isWriting = true;
-
-      const text = queue.shift();
-      const lineHeight = 48;
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const maxLines = Math.floor((rect.height - 30) / lineHeight);
-
-      if (currentLine >= maxLines) {
-        await new Promise(r => setTimeout(r, 600));
-        clearNotebook();
-      }
-
-      const startX = 72;
-      const baselineY = (currentLine + 1) * lineHeight - 10;
-      const fontSize = 31;
-
-      ctx.font = `700 ${fontSize}px '${currentFont}', cursive`;
-      ctx.fillStyle = inkColor;
-
-      let cursorX = startX;
-      pen.style.opacity = '1';
-
-      const speedVal = parseInt(document.getElementById('speed-slider').value, 10);
-      const charDelay = Math.max(25, 130 - speedVal * 10);
-
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        const charWidth = ctx.measureText(ch).width;
-
-        if (cursorX + charWidth > rect.width - 20) break;
-
-        // Move pen tip to character position with slight natural jitter
-        const jitterY = Math.sin(i * 1.7) * 3;
-        const rot = -12 + Math.cos(i * 1.3) * 4;
-        pen.style.transform = `translate(${cursorX - 6}px, ${baselineY - 104 + jitterY}px) rotate(${rot}deg)`;
-
-        ctx.fillText(ch, cursorX, baselineY);
-        playScratchSound();
-
-        cursorX += charWidth;
-        await new Promise(r => setTimeout(r, charDelay));
-      }
-
-      currentLine++;
-      totalWritten++;
-      document.getElementById('written-count').textContent = totalWritten;
-
-      // Lift pen slightly after finishing word
-      pen.style.transform = `translate(${cursorX + 10}px, ${baselineY - 125}px) rotate(-18deg)`;
-      await new Promise(r => setTimeout(r, 220));
-
-      if (queue.length === 0) {
-        pen.style.opacity = '0';
-      }
-
-      isWriting = false;
-      processQueue();
-    }
-
-    function addManualName() {
-      const inp = document.getElementById('manual-name');
-      if (inp.value.trim()) {
-        enqueueText(inp.value);
-        inp.value = '';
-      }
-    }
-
-    function toggleDemo() {
-      const btn = document.getElementById('demo-btn');
-      if (demoInterval) {
-        clearInterval(demoInterval);
-        demoInterval = null;
-        btn.textContent = '▶ Start Auto Demo';
-      } else {
-        let idx = 0;
-        enqueueText(sampleNames[idx++ % sampleNames.length]);
-        demoInterval = setInterval(() => {
-          enqueueText(sampleNames[idx++ % sampleNames.length]);
-        }, 2500);
-        btn.textContent = '⏹ Stop Demo';
-      }
-    }
-
-    async function startYouTubeConnection() {
-      if (isPolling) {
-        stopYouTubeConnection();
-        return;
-      }
-
-      const apiKey = document.getElementById('api-key-input').value.trim() || DEFAULT_API_KEY;
-      const rawVideo = document.getElementById('video-url-input').value.trim();
-      const videoId = extractVideoId(rawVideo);
-
-      if (!videoId) {
-        setStatus('Please enter a valid YouTube Live Video URL or 11-character Video ID.', 'err');
-        return;
-      }
-
-      setStatus('Connecting to YouTube Live stream...');
-      document.getElementById('conn-pill').textContent = 'Connecting...';
-
-      try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${encodeURIComponent(apiKey)}`);
-        const data = await res.json();
-
-        if (data.error) {
-          throw new Error(data.error.message || 'API Error');
+        // --- Built-in Crisp Vector Avatars (Zero Broken External Links) ---
+        function createAvatarSVG(label, subLabel, c1, c2, badgeColor) {
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+                    <defs>
+                        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="${c1}"/>
+                            <stop offset="100%" stop-color="${c2}"/>
+                        </linearGradient>
+                        <radialGradient id="glow" cx="50%" cy="38%" r="45%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+                            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <rect width="300" height="420" fill="url(#bg)"/>
+                    <rect width="300" height="420" fill="url(#glow)"/>
+                    <circle cx="150" cy="145" r="56" fill="#ffffff" opacity="0.92"/>
+                    <path d="M65 315 C65 235, 235 235, 235 315 Z" fill="#ffffff" opacity="0.92"/>
+                    <rect x="45" y="265" width="210" height="46" rx="23" fill="${badgeColor}" opacity="0.95"/>
+                    <text x="150" y="295" font-family="Arial, sans-serif" font-weight="900" font-size="24" fill="#ffffff" text-anchor="middle" letter-spacing="2">${label}</text>
+                    <text x="150" y="332" font-family="Arial, sans-serif" font-weight="700" font-size="13" fill="#ffffff" opacity="0.85" text-anchor="middle" letter-spacing="3">${subLabel}</text>
+                </svg>
+            `;
+            return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
         }
 
-        if (!data.items || data.items.length === 0) {
-          throw new Error('Video not found. Check Video ID.');
+        const PRESET_AVATARS = {
+            vijay: createAvatarSVG("VIJAY", "THALAPATHY", "#1d4ed8", "#06b6d4", "#0f172a"),
+            ajith: createAvatarSVG("AJITH", "THALA", "#dc2626", "#f97316", "#0f172a"),
+            csk: createAvatarSVG("CSK", "WHISTLE PODU", "#f59e0b", "#d97706", "#1e3a8a"),
+            rcb: createAvatarSVG("RCB", "EE SALA CUP", "#b91c1c", "#111827", "#f59e0b"),
+            india: createAvatarSVG("INDIA", "MEN IN BLUE", "#2563eb", "#0284c7", "#ea580c"),
+            aus: createAvatarSVG("AUSTRALIA", "YELLOW ARMY", "#eab308", "#15803d", "#0f172a"),
+            cr7: createAvatarSVG("RONALDO", "CR7 LEGEND", "#dc2626", "#991b1b", "#0f172a"),
+            messi: createAvatarSVG("MESSI", "LM10 GOAT", "#0284c7", "#38bdf8", "#0f172a")
+        };
+
+        // --- Game State ---
+        const TARGET_SCORE = 100;
+        const ROUND_COOLDOWN_SECONDS = 20;
+
+        const state = {
+            round: 1,
+            name1: "VIJAY",
+            name2: "AJITH",
+            img1: PRESET_AVATARS.vijay,
+            img2: PRESET_AVATARS.ajith,
+            score1: 0,
+            score2: 0,
+            wins1: 0,
+            wins2: 0,
+            isRunning: false,
+            isPaused: false,
+            inVictoryScreen: false,
+            speed: "normal",
+            soundEnabled: true,
+            activePasteTarget: 1
+        };
+
+        // --- Web Audio API Synthesizer (Zero External Sound Files Needed) ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === "suspended") {
+                audioCtx.resume().catch(() => {});
+            }
         }
 
-        const details = data.items[0].liveStreamingDetails;
-        if (!details || !details.activeLiveChatId) {
-          throw new Error('Live chat not active yet. Start stream first or wait a few seconds.');
+        function playDiceTickSound() {
+            if (!state.soundEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(220 + Math.random() * 180, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            } catch (e) {}
         }
 
-        liveChatId = details.activeLiveChatId;
-        nextPageToken = null;
-        isPolling = true;
-
-        document.getElementById('connect-btn').textContent = '⏹ Disconnect Live Chat';
-        document.getElementById('connect-btn').style.background = '#475569';
-        document.getElementById('conn-pill').textContent = 'Connected';
-        document.getElementById('conn-pill').style.color = '#4ade80';
-        document.getElementById('live-badge').style.display = 'flex';
-        setStatus('✅ Connected to YouTube Live Chat! Reading incoming comments...', 'ok');
-
-        // Auto-hide panel when connected via URL parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('v')) {
-          toggleSettings(false);
+        function playPointPopSound(step) {
+            if (!state.soundEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(440 + step * 55, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.11, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.11);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.11);
+            } catch (e) {}
         }
 
-        pollLiveChat(apiKey);
-      } catch (err) {
-        setStatus('API Error: ' + err.message, 'err');
-        document.getElementById('conn-pill').textContent = 'Error';
-        document.getElementById('conn-pill').style.color = '#f87171';
-      }
-    }
-
-    function stopYouTubeConnection() {
-      isPolling = false;
-      if (pollTimer) clearTimeout(pollTimer);
-      document.getElementById('connect-btn').textContent = '🔴 Connect YouTube Live';
-      document.getElementById('connect-btn').style.background = '#dc2626';
-      document.getElementById('conn-pill').textContent = 'Idle';
-      document.getElementById('conn-pill').style.color = '#94a3b8';
-      document.getElementById('live-badge').style.display = 'none';
-      setStatus('Disconnected from YouTube Live.');
-    }
-
-    async function pollLiveChat(apiKey) {
-      if (!isPolling || !liveChatId) return;
-
-      try {
-        let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(liveChatId)}&part=snippet,authorDetails&key=${encodeURIComponent(apiKey)}`;
-        if (nextPageToken) url += `&pageToken=${encodeURIComponent(nextPageToken)}`;
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.error) {
-          setStatus('Chat Poll Error: ' + data.error.message, 'err');
-          stopYouTubeConnection();
-          return;
+        function playVictoryFanfare() {
+            if (!state.soundEnabled || !audioCtx) return;
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.5];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = "triangle";
+                    const start = audioCtx.currentTime + idx * 0.12;
+                    osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(0.16, start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(start);
+                    osc.stop(start + 0.35);
+                });
+            } catch (e) {}
         }
 
-        const isFirstFetch = !nextPageToken;
-        nextPageToken = data.nextPageToken;
+        // --- 3D Dice Cube Face Rotations ---
+        const CUBE_FACE_TRANSFORMS = {
+            1: "rotateX(0deg) rotateY(0deg) rotateZ(0deg)",
+            2: "rotateX(0deg) rotateY(-90deg) rotateZ(0deg)",
+            3: "rotateX(-90deg) rotateY(0deg) rotateZ(0deg)",
+            4: "rotateX(90deg) rotateY(0deg) rotateZ(0deg)",
+            5: "rotateX(0deg) rotateY(90deg) rotateZ(0deg)",
+            6: "rotateX(0deg) rotateY(180deg) rotateZ(0deg)"
+        };
 
-        if (data.items && data.items.length > 0) {
-          const mode = document.getElementById('write-mode').value;
-          for (const item of data.items) {
-            if (seenMessageIds.has(item.id)) continue;
-            seenMessageIds.add(item.id);
-
-            // Skip old backlog messages on initial connect, or write last 2
-            if (isFirstFetch && data.items.indexOf(item) < data.items.length - 2) continue;
-
-            const author = item.authorDetails?.displayName || '';
-            const msg = item.snippet?.displayMessage || '';
-            enqueueText(mode === 'author' ? author : msg);
-          }
+        function set3DDiceFace(value, playerTheme = "neutral") {
+            const cube = document.getElementById("sharedDiceCube");
+            cube.classList.remove("theme-neutral", "theme-p1", "theme-p2");
+            cube.classList.add(`theme-${playerTheme}`);
+            cube.style.transform = CUBE_FACE_TRANSFORMS[value] || CUBE_FACE_TRANSFORMS[1];
         }
 
-        const userInterval = parseInt(document.getElementById('poll-interval').value, 10);
-        const apiInterval = data.pollingIntervalMillis || 5000;
-        const delay = Math.max(userInterval, apiInterval);
+        // --- Sleep Helper (Respects Pause) ---
+        function sleep(ms) {
+            return new Promise((resolve) => {
+                let elapsed = 0;
+                const interval = 50;
+                const timer = setInterval(() => {
+                    if (!state.isRunning) {
+                        clearInterval(timer);
+                        resolve();
+                        return;
+                    }
+                    if (!state.isPaused) {
+                        elapsed += interval;
+                        if (elapsed >= ms) {
+                            clearInterval(timer);
+                            resolve();
+                        }
+                    }
+                }, interval);
+            });
+        }
 
-        pollTimer = setTimeout(() => pollLiveChat(apiKey), delay);
-      } catch (err) {
-        pollTimer = setTimeout(() => pollLiveChat(apiKey), 8000);
-      }
-    }
+        // --- Floating "+1" Point Popup ---
+        function spawnFloatingPoint(playerNum) {
+            const wrapper = document.getElementById(playerNum === 1 ? "scoreWrapperP1" : "scoreWrapperP2");
+            const el = document.createElement("div");
+            el.className = `floating-point ${playerNum === 1 ? "text-cyan-300" : "text-amber-300"}`;
+            el.style.left = `${38 + Math.random() * 24}%`;
+            el.style.top = "6px";
+            el.textContent = "+1";
+            wrapper.appendChild(el);
+            setTimeout(() => el.remove(), 700);
+        }
 
-    // Auto-init from URL parameters (?v=VIDEO_ID & optional ?key=API_KEY)
-    window.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      const customKey = params.get('key');
-      const videoParam = params.get('v');
+        // --- Update UI ---
+        function updateUI() {
+            document.getElementById("roundBadge").textContent = `ROUND ${state.round}`;
+            document.getElementById("nameP1").textContent = state.name1;
+            document.getElementById("nameP2").textContent = state.name2;
+            document.getElementById("labelTurnP1").textContent = state.name1;
+            document.getElementById("labelTurnP2").textContent = state.name2;
 
-      if (customKey) {
-        document.getElementById('api-key-input').value = customKey;
-      }
+            document.getElementById("imgP1").src = state.img1;
+            document.getElementById("imgP2").src = state.img2;
+            document.getElementById("previewP1").src = state.img1;
+            document.getElementById("previewP2").src = state.img2;
 
-      if (videoParam) {
-        document.getElementById('video-url-input').value = videoParam;
-        // Hide settings panel immediately for clean stream overlay
-        toggleSettings(false);
-        startYouTubeConnection();
-      }
-    });
-  </script>
+            document.getElementById("scoreP1").textContent = state.score1;
+            document.getElementById("scoreP2").textContent = state.score2;
+            document.getElementById("winsP1").textContent = state.wins1;
+            document.getElementById("winsP2").textContent = state.wins2;
+
+            const pct1 = Math.min(100, (state.score1 / TARGET_SCORE) * 100);
+            const pct2 = Math.min(100, (state.score2 / TARGET_SCORE) * 100);
+            document.getElementById("barP1").style.width = `${pct1}%`;
+            document.getElementById("barP2").style.width = `${pct2}%`;
+        }
+
+        function highlightActiveCard(playerNum) {
+            const card1 = document.getElementById("cardP1");
+            const card2 = document.getElementById("cardP2");
+            const badge1 = document.getElementById("turnBadgeP1");
+            const badge2 = document.getElementById("turnBadgeP2");
+            const leftArrow = document.getElementById("leftTurnArrow");
+            const rightArrow = document.getElementById("rightTurnArrow");
+            const diceHeader = document.getElementById("diceTurnHeader");
+
+            card1.classList.remove("active-turn-blue");
+            card2.classList.remove("active-turn-red");
+            badge1.classList.add("hidden");
+            badge2.classList.add("hidden");
+
+            leftArrow.className = "flex items-center gap-1 text-xs font-black text-slate-600 transition-all duration-300 max-w-[32%] truncate";
+            rightArrow.className = "flex items-center justify-end gap-1 text-xs font-black text-slate-600 transition-all duration-300 max-w-[32%] truncate";
+
+            if (playerNum === 1) {
+                card1.classList.add("active-turn-blue");
+                badge1.classList.remove("hidden");
+                leftArrow.className = "flex items-center gap-1 text-xs font-black text-blue-400 scale-105 transition-all duration-300 max-w-[32%] truncate";
+                diceHeader.textContent = `◀ ${state.name1} ROLLING`;
+                diceHeader.className = "text-[10px] sm:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-600/35 text-blue-200 border border-blue-400/50 whitespace-nowrap";
+            } else if (playerNum === 2) {
+                card2.classList.add("active-turn-red");
+                badge2.classList.remove("hidden");
+                rightArrow.className = "flex items-center justify-end gap-1 text-xs font-black text-red-400 scale-105 transition-all duration-300 max-w-[32%] truncate";
+                diceHeader.textContent = `${state.name2} ROLLING ▶`;
+                diceHeader.className = "text-[10px] sm:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-red-600/35 text-red-200 border border-red-400/50 whitespace-nowrap";
+            } else {
+                diceHeader.textContent = "READY TO ROLL";
+                diceHeader.className = "text-[10px] sm:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap";
+            }
+        }
+
+        // --- Execute Single Player Turn ---
+        async function executePlayerTurn(playerNum) {
+            if (!state.isRunning || state.inVictoryScreen) return false;
+
+            const cubeEl = document.getElementById("sharedDiceCube");
+            const shadowEl = document.getElementById("diceShadow");
+            const rolledBadge = document.getElementById("rolledNumberBadge");
+            const playerName = playerNum === 1 ? state.name1 : state.name2;
+            const playerTheme = playerNum === 1 ? "p1" : "p2";
+            const statusBanner = document.getElementById("statusBanner");
+
+            highlightActiveCard(playerNum);
+            rolledBadge.textContent = "🎲 ROLLING...";
+            statusBanner.textContent = `🎲 ${playerName} IS ROLLING...`;
+
+            cubeEl.classList.remove("theme-neutral", "theme-p1", "theme-p2");
+            cubeEl.classList.add(`theme-${playerTheme}`, "rolling-3d");
+            shadowEl.classList.add("bouncing");
+
+            const rollDuration = state.speed === "fast" ? 650 : 1000;
+            const tickInterval = setInterval(() => {
+                if (!state.isPaused) playDiceTickSound();
+            }, 95);
+
+            await sleep(rollDuration);
+            clearInterval(tickInterval);
+
+            cubeEl.classList.remove("rolling-3d");
+            shadowEl.classList.remove("bouncing");
+
+            if (!state.isRunning) return false;
+
+            const rolledValue = Math.floor(Math.random() * 6) + 1;
+            set3DDiceFace(rolledValue, playerTheme);
+            playDiceTickSound();
+
+            rolledBadge.textContent = `ROLLED: ${rolledValue} (+${rolledValue} PTS)`;
+            statusBanner.textContent = `🔥 ${playerName} GOT ${rolledValue}!`;
+
+            await sleep(state.speed === "fast" ? 240 : 400);
+
+            // Increment Score 1 by 1
+            const stepDelay = state.speed === "fast" ? 130 : 230;
+            for (let i = 1; i <= rolledValue; i++) {
+                if (!state.isRunning) return false;
+
+                if (playerNum === 1) {
+                    state.score1 += 1;
+                } else {
+                    state.score2 += 1;
+                }
+
+                playPointPopSound(i);
+                spawnFloatingPoint(playerNum);
+                updateUI();
+
+                const currentScore = playerNum === 1 ? state.score1 : state.score2;
+                if (currentScore >= TARGET_SCORE) {
+                    await sleep(220);
+                    await handleVictory(playerNum);
+                    return true;
+                }
+
+                await sleep(stepDelay);
+            }
+
+            await sleep(state.speed === "fast" ? 220 : 420);
+            return false;
+        }
+
+        // --- Infinite Automated Battle Loop ---
+        async function runBattleLoop() {
+            while (state.isRunning) {
+                if (state.inVictoryScreen || state.isPaused) {
+                    await sleep(100);
+                    continue;
+                }
+
+                const p1Won = await executePlayerTurn(1);
+                if (!state.isRunning || p1Won) continue;
+
+                const p2Won = await executePlayerTurn(2);
+                if (!state.isRunning || p2Won) continue;
+            }
+        }
+
+        // --- Victory Screen + 20-Second Auto-Restart Countdown ---
+        async function handleVictory(winnerNum) {
+            state.inVictoryScreen = true;
+            highlightActiveCard(0);
+            document.getElementById("rolledNumberBadge").innerHTML = "&nbsp;";
+
+            if (winnerNum === 1) {
+                state.wins1 += 1;
+            } else {
+                state.wins2 += 1;
+            }
+            updateUI();
+
+            const winnerName = winnerNum === 1 ? state.name1 : state.name2;
+            const winnerImg = winnerNum === 1 ? state.img1 : state.img2;
+            const winnerScore = winnerNum === 1 ? state.score1 : state.score2;
+
+            document.getElementById("winnerName").textContent = winnerName;
+            document.getElementById("winnerImg").src = winnerImg;
+            document.getElementById("winnerFinalScore").textContent = winnerScore;
+            document.getElementById("nextRoundLabel").textContent = `Preparing Round ${state.round + 1}...`;
+            document.getElementById("statusBanner").textContent = `👑 ${winnerName} WINS ROUND ${state.round}!`;
+
+            const overlay = document.getElementById("winnerOverlay");
+            overlay.classList.remove("hidden");
+
+            playVictoryFanfare();
+            startConfetti();
+
+            for (let sec = ROUND_COOLDOWN_SECONDS; sec >= 1; sec--) {
+                if (!state.isRunning) break;
+                document.getElementById("countdownTimer").textContent = `${sec}s`;
+                const pct = (sec / ROUND_COOLDOWN_SECONDS) * 100;
+                document.getElementById("countdownBar").style.width = `${pct}%`;
+                await sleep(1000);
+            }
+
+            stopConfetti();
+            overlay.classList.add("hidden");
+
+            if (state.isRunning) {
+                state.round += 1;
+                state.score1 = 0;
+                state.score2 = 0;
+                set3DDiceFace(1, "neutral");
+                updateUI();
+                state.inVictoryScreen = false;
+            }
+        }
+
+        // --- Confetti Celebration ---
+        let confettiAnimId = null;
+        function startConfetti() {
+            const canvas = document.getElementById("confettiCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ["#f59e0b", "#3b82f6", "#ef4444", "#10b981", "#a855f7", "#ffffff"];
+            const particles = Array.from({ length: 85 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 8 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1,
+                angle: Math.random() * 360
+            }));
+
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach((p) => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.angle += 4;
+                    if (p.y > canvas.height) p.y = -10;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.angle * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                });
+                confettiAnimId = requestAnimationFrame(render);
+            }
+            render();
+        }
+
+        function stopConfetti() {
+            if (confettiAnimId) {
+                cancelAnimationFrame(confettiAnimId);
+                confettiAnimId = null;
+            }
+            const canvas = document.getElementById("confettiCanvas");
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- Multi-Method Photo Updating Helpers ---
+        function showModalFeedback(msg, isError = false) {
+            const fb = document.getElementById("modalFeedback");
+            fb.textContent = msg;
+            fb.className = isError
+                ? "mb-3 px-3 py-2 rounded-xl text-xs font-bold bg-rose-950/90 border border-rose-500/50 text-rose-300 text-center"
+                : "mb-3 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-center";
+            fb.classList.remove("hidden");
+            setTimeout(() => fb.classList.add("hidden"), 3000);
+        }
+
+        function setPlayerPhoto(playerNum, src, feedbackMsg = null) {
+            if (!src) return;
+            if (playerNum === 1) {
+                state.img1 = src;
+            } else {
+                state.img2 = src;
+            }
+            updateUI();
+            if (feedbackMsg) showModalFeedback(feedbackMsg, false);
+        }
+
+        function handleFileObject(file, playerNum) {
+            if (!file || !file.type.startsWith("image/")) {
+                showModalFeedback("Please select a valid image file.", true);
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                setPlayerPhoto(playerNum, e.target.result, `✓ Team ${playerNum} photo updated!`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Global Preset Function for 1-Click Avatars
+        window.applyPreset = function (playerNum, teamName, presetKey) {
+            const avatarSrc = PRESET_AVATARS[presetKey];
+            if (playerNum === 1) {
+                state.name1 = teamName;
+                document.getElementById("inputNameP1").value = teamName;
+            } else {
+                state.name2 = teamName;
+                document.getElementById("inputNameP2").value = teamName;
+            }
+            setPlayerPhoto(playerNum, avatarSrc, `✓ Team ${playerNum} set to ${teamName}!`);
+        };
+
+        // Clipboard Image Reader
+        async function pasteImageFromClipboard(playerNum) {
+            try {
+                if (navigator.clipboard && navigator.clipboard.read) {
+                    const items = await navigator.clipboard.read();
+                    for (const item of items) {
+                        const imageType = item.types.find((t) => t.startsWith("image/"));
+                        if (imageType) {
+                            const blob = await item.getType(imageType);
+                            handleFileObject(blob, playerNum);
+                            return;
+                        }
+                    }
+                }
+                showModalFeedback("Copy an image first, then press Ctrl+V or paste an Image URL!", true);
+            } catch (err) {
+                showModalFeedback("Press Ctrl+V on keyboard or paste an Image URL below!", true);
+            }
+        }
+
+        // --- Event Listeners ---
+        const settingsModal = document.getElementById("settingsModal");
+
+        function openSetupModal(focusPlayer = 1) {
+            state.activePasteTarget = focusPlayer;
+            document.getElementById("inputNameP1").value = state.name1;
+            document.getElementById("inputNameP2").value = state.name2;
+            settingsModal.classList.remove("hidden");
+        }
+
+        function closeSetupModal() {
+            const n1 = document.getElementById("inputNameP1").value.trim();
+            const n2 = document.getElementById("inputNameP2").value.trim();
+            const url1 = document.getElementById("urlInputP1").value.trim();
+            const url2 = document.getElementById("urlInputP2").value.trim();
+
+            if (n1) state.name1 = n1.toUpperCase();
+            if (n2) state.name2 = n2.toUpperCase();
+            if (url1) state.img1 = url1;
+            if (url2) state.img2 = url2;
+
+            updateUI();
+            settingsModal.classList.add("hidden");
+        }
+
+        // Open Settings via Edit button or tapping either Player Photo Card
+        document.getElementById("openSettingsBtn").addEventListener("click", () => openSetupModal(1));
+        document.getElementById("cardP1").addEventListener("click", () => openSetupModal(1));
+        document.getElementById("cardP2").addEventListener("click", () => openSetupModal(2));
+        document.getElementById("closeSettingsBtn").addEventListener("click", closeSetupModal);
+        document.getElementById("saveSettingsBtn").addEventListener("click", closeSetupModal);
+
+        // File Input Listeners
+        document.getElementById("fileP1").addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleFileObject(e.target.files[0], 1);
+                e.target.value = "";
+            }
+        });
+        document.getElementById("fileP2").addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleFileObject(e.target.files[0], 2);
+                e.target.value = "";
+            }
+        });
+
+        // URL Apply Buttons
+        document.getElementById("applyUrlBtnP1").addEventListener("click", () => {
+            const url = document.getElementById("urlInputP1").value.trim();
+            if (url) {
+                setPlayerPhoto(1, url, "✓ Team 1 image link applied!");
+            } else {
+                showModalFeedback("Paste a valid image URL first.", true);
+            }
+        });
+        document.getElementById("applyUrlBtnP2").addEventListener("click", () => {
+            const url = document.getElementById("urlInputP2").value.trim();
+            if (url) {
+                setPlayerPhoto(2, url, "✓ Team 2 image link applied!");
+            } else {
+                showModalFeedback("Paste a valid image URL first.", true);
+            }
+        });
+
+        // Paste Buttons & Global Ctrl+V Paste Support
+        document.getElementById("pasteBtnP1").addEventListener("click", () => {
+            state.activePasteTarget = 1;
+            pasteImageFromClipboard(1);
+        });
+        document.getElementById("pasteBtnP2").addEventListener("click", () => {
+            state.activePasteTarget = 2;
+            pasteImageFromClipboard(2);
+        });
+
+        document.addEventListener("paste", (e) => {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith("image/")) {
+                    const file = item.getAsFile();
+                    handleFileObject(file, state.activePasteTarget);
+                    break;
+                }
+            }
+        });
+
+        // Drag-and-Drop Image Support on Photo Cards & Modal Dropzones
+        document.querySelectorAll(".fighter-dropzone, .modal-dropzone").forEach((zone) => {
+            zone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                zone.classList.add("ring-2", "ring-amber-400");
+            });
+            zone.addEventListener("dragleave", () => {
+                zone.classList.remove("ring-2", "ring-amber-400");
+            });
+            zone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                zone.classList.remove("ring-2", "ring-amber-400");
+                const playerNum = Number(zone.getAttribute("data-player")) || 1;
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFileObject(e.dataTransfer.files[0], playerNum);
+                }
+            });
+        });
+
+        // Start Battle Button
+        document.getElementById("startBattleBtn").addEventListener("click", () => {
+            initAudio();
+            state.isRunning = true;
+            state.isPaused = false;
+            document.getElementById("startBattleBtn").classList.add("hidden");
+            document.getElementById("autoRunningIndicator").classList.remove("hidden");
+            document.getElementById("photoHintP1").classList.add("hidden");
+            document.getElementById("photoHintP2").classList.add("hidden");
+            runBattleLoop();
+        });
+
+        // Pause / Resume Button
+        document.getElementById("pauseResumeBtn").addEventListener("click", (e) => {
+            state.isPaused = !state.isPaused;
+            e.target.textContent = state.isPaused ? "Resume" : "Pause";
+            document.getElementById("statusBanner").textContent = state.isPaused
+                ? "⏸ BATTLE PAUSED"
+                : "▶ RESUMING BATTLE...";
+        });
+
+        // Speed & Sound Controls
+        document.getElementById("speedSelect").addEventListener("change", (e) => {
+            state.speed = e.target.value;
+        });
+
+        function updateSoundButtons() {
+            const quickBtn = document.getElementById("quickSoundBtn");
+            const modalBtn = document.getElementById("toggleSoundBtn");
+            if (state.soundEnabled) {
+                quickBtn.textContent = "🔊";
+                modalBtn.textContent = "🔊 Sound ON";
+                modalBtn.className = "w-full bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold";
+            } else {
+                quickBtn.textContent = "🔇";
+                modalBtn.textContent = "🔇 Sound OFF";
+                modalBtn.className = "w-full bg-slate-700/50 border border-slate-600 text-slate-400 rounded-xl px-2.5 py-1.5 text-xs font-bold";
+            }
+        }
+
+        document.getElementById("quickSoundBtn").addEventListener("click", () => {
+            initAudio();
+            state.soundEnabled = !state.soundEnabled;
+            updateSoundButtons();
+        });
+
+        document.getElementById("toggleSoundBtn").addEventListener("click", () => {
+            initAudio();
+            state.soundEnabled = !state.soundEnabled;
+            updateSoundButtons();
+        });
+
+        // Full Reset Button
+        document.getElementById("resetMatchBtn").addEventListener("click", () => {
+            stopConfetti();
+            document.getElementById("winnerOverlay").classList.add("hidden");
+            state.round = 1;
+            state.score1 = 0;
+            state.score2 = 0;
+            state.wins1 = 0;
+            state.wins2 = 0;
+            state.inVictoryScreen = false;
+            set3DDiceFace(6, "neutral");
+            document.getElementById("rolledNumberBadge").innerHTML = "&nbsp;";
+            updateUI();
+            settingsModal.classList.add("hidden");
+        });
+
+        // Initialize on Window Load
+        window.onload = function () {
+            set3DDiceFace(6, "neutral");
+            updateUI();
+        };
+    </script>
 </body>
 </html>
